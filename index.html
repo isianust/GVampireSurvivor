@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GVampire Survivor V2</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Instruction Overlay -->
+    <div id="instruction-overlay">
+        <div class="instruction-box">
+            <h1>🧛 GVampire Survivor V2 🧛</h1>
+            <div class="instruction-content">
+                <h2>📖 遊戲說明 Game Instructions</h2>
+                <div class="instruction-section">
+                    <h3>🎮 遊戲目標 Objective</h3>
+                    <p>你是一位吸血鬼獵人，必須在不斷湧來的怪物潮中存活下來！</p>
+                    <p>You are a vampire hunter — survive the endless waves of monsters!</p>
+                    <p>擊敗敵人獲取經驗值，升級後可以增強你的能力。撐得越久，分數越高！</p>
+                </div>
+                <div class="instruction-section">
+                    <h3>🕹️ 操作方式 Controls</h3>
+                    <div class="controls-grid">
+                        <div class="control-item">
+                            <span class="control-key">⌨️ 鍵盤 Keyboard</span>
+                            <p>WASD 或 方向鍵 移動角色</p>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-key">📱 手機 Mobile</span>
+                            <p>使用螢幕左側的虛擬搖桿控制移動</p>
+                        </div>
+                    </div>
+                    <p>⚔️ 角色會自動攻擊附近的敵人！</p>
+                </div>
+                <div class="instruction-section">
+                    <h3>👾 敵人種類 Enemy Types (10種)</h3>
+                    <div class="enemy-grid">
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#8B0000">💀</span> 骷髏 Skeleton — 基本敵人</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#006400">🧟</span> 殭屍 Zombie — 緩慢但耐打</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#4B0082">🦇</span> 蝙蝠 Bat — 快速飛行</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#800080">👻</span> 幽靈 Ghost — 半透明穿越</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#8B4513">🕷️</span> 蜘蛛 Spider — 敏捷移動</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#2F4F4F">🐺</span> 狼人 Werewolf — 強壯快速</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#191970">🧙</span> 巫師 Warlock — 遠程攻擊</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#B22222">🧛</span> 吸血鬼 Vampire — 吸血回復</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#556B2F">🐉</span> 小龍 Drake — 噴火攻擊</div>
+                        <div class="enemy-item"><span class="enemy-icon" style="color:#4A0404">👹</span> 魔王 Demon Lord — 終極BOSS</div>
+                    </div>
+                </div>
+                <div class="instruction-section">
+                    <h3>💡 遊戲提示 Tips</h3>
+                    <ul>
+                        <li>持續移動以避免被包圍</li>
+                        <li>收集經驗寶石來升級</li>
+                        <li>升級時選擇適合的能力強化</li>
+                        <li>注意不同敵人的攻擊模式</li>
+                        <li>BOSS會在特定時間出現，做好準備！</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="start-btn" class="glow-btn">⚔️ 開始遊戲 START GAME ⚔️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameover-overlay" class="hidden">
+        <div class="instruction-box gameover-box">
+            <h1>💀 遊戲結束 GAME OVER 💀</h1>
+            <div id="final-stats"></div>
+            <button id="restart-btn" class="glow-btn">🔄 再試一次 RETRY 🔄</button>
+        </div>
+    </div>
+
+    <!-- Level Up Overlay -->
+    <div id="levelup-overlay" class="hidden">
+        <div class="instruction-box levelup-box">
+            <h1>⬆️ 升級 LEVEL UP! ⬆️</h1>
+            <div id="upgrade-options"></div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div id="hud-top">
+            <div id="hp-bar-container">
+                <div id="hp-bar"></div>
+                <span id="hp-text"></span>
+            </div>
+            <div id="xp-bar-container">
+                <div id="xp-bar"></div>
+                <span id="xp-text"></span>
+            </div>
+        </div>
+        <div id="hud-info">
+            <span id="level-display">Lv.1</span>
+            <span id="time-display">00:00</span>
+            <span id="kill-display">Kills: 0</span>
+        </div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Mobile Joystick -->
+    <div id="joystick-area" class="hidden">
+        <div id="joystick-base">
+            <div id="joystick-thumb"></div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
