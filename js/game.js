@@ -1,5 +1,7 @@
 /* ===== Core Game State & Loop ===== */
 
+var BOSS_SPAWN_TIME = 180; // seconds
+
 var Game = {
     state: 'menu',  // menu | playing | paused | levelup | gameover
     player: null,
@@ -60,7 +62,7 @@ var Game = {
         }
 
         // Boss spawn at certain times
-        if (Math.floor(this.elapsed) === 180 && this.enemies.filter(function (e) { return e.type === 'demon'; }).length === 0) {
+        if (Math.floor(this.elapsed) === BOSS_SPAWN_TIME && this.enemies.filter(function (e) { return e.type === 'demon'; }).length === 0) {
             this.spawnBoss();
         }
 

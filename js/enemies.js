@@ -103,11 +103,14 @@ var ENEMY_TYPES = {
     }
 };
 
+var HP_SCALE_INTERVAL = 60;       // scale HP every N seconds
+var HP_SCALE_MULTIPLIER = 0.3;    // HP increase per interval
+
 /** Create an enemy instance */
 function createEnemy(type, x, y, elapsed) {
     var def = ENEMY_TYPES[type];
     // Scale HP with time
-    var scale = 1 + Math.floor(elapsed / 60) * 0.3;
+    var scale = 1 + Math.floor(elapsed / HP_SCALE_INTERVAL) * HP_SCALE_MULTIPLIER;
     return {
         type: type,
         x: x,

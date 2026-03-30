@@ -1,5 +1,7 @@
 /* ===== Weapon System ===== */
 
+var INFINITE_PIERCING = 999;
+
 var WEAPON_DEFS = {
     knife: {
         name: '飛刀 Throwing Knife',
@@ -111,7 +113,7 @@ function fireWeapons(weapons, player, enemies, dt) {
                     life: w.def.duration,
                     tickRate: 0.3,
                     tickTimer: 0,
-                    piercing: 999,
+                    piercing: INFINITE_PIERCING,
                     hitEnemies: []
                 });
             } else if (w.id === 'whip') {
@@ -131,7 +133,7 @@ function fireWeapons(weapons, player, enemies, dt) {
                     radius: w.def.range,
                     type: 'whip',
                     life: w.def.duration,
-                    piercing: 999,
+                    piercing: INFINITE_PIERCING,
                     hitEnemies: [],
                     followPlayer: true
                 });
