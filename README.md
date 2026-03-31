@@ -283,7 +283,7 @@ A Vampire Survivor-style HTML5 game evolving from indie prototype to enterprise-
 | Sprite Tools | **TexturePacker** | Sprite atlas generation |
 
 ### Language Change Assessment
-> **No language change is necessary.** TypeScript (a superset of JavaScript) is the recommended upgrade path. It provides enterprise-grade type safety while keeping full compatibility with existing Canvas/WebGL APIs. The current JavaScript code can be incrementally migrated to TypeScript file by file.
+> **No new language runtime is needed** — TypeScript compiles to JavaScript, so the browser runtime stays the same. However, **migrating to TypeScript is a substantial effort** that requires rewriting all files with type annotations, interfaces, and strict null checks. This is the single highest-impact change for enterprise readiness. The migration can be done incrementally (file by file) alongside existing JavaScript, making it a practical upgrade path without a full rewrite.
 
 ---
 
