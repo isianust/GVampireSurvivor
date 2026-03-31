@@ -1,0 +1,38 @@
+{
+  "name": "gvampiresurvivor",
+  "version": "2.0.0",
+  "description": "A Vampire Survivor-style HTML5 game built with TypeScript and Canvas.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isianust/GVampireSurvivor.git"
+  },
+  "keywords": ["game", "vampire-survivors", "html5", "canvas", "typescript"],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/isianust/GVampireSurvivor/issues"
+  },
+  "homepage": "https://github.com/isianust/GVampireSurvivor#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.2",
+    "eslint": "^10.1.0",
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.0",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.2"
+  }
+}
