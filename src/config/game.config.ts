@@ -84,6 +84,8 @@ export const CONFIG = {
   /** Physics */
   physics: {
     maxDt: 0.05,
+    /** When true, draw collision radii for player, enemies, and gems. */
+    debug: false,
   },
 
   /** Weapon system */

@@ -238,4 +238,51 @@ export const Renderer = {
     ctx.fillText(dn.text, sx, sy);
     ctx.globalAlpha = 1;
   },
+
+  /** Draw collision radii for all entities when physics debug is enabled. */
+  drawDebugColliders(player: Player, enemies: Enemy[], gems: Gem[], camera: Camera): void {
+    if (!this.ctx || !this.canvas) return;
+    const ctx = this.ctx;
+    const hw = this.canvas.width / 2;
+    const hh = this.canvas.height / 2;
+
+    ctx.lineWidth = 1;
+
+    // Player body radius (green)
+    const px = player.x - camera.x + hw;
+    const py = player.y - camera.y + hh;
+    ctx.strokeStyle = 'lime';
+    ctx.beginPath();
+    ctx.arc(px, py, player.radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Player magnet range (cyan dashed)
+    ctx.strokeStyle = 'cyan';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(px, py, player.magnetRange, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Enemies (red)
+    ctx.strokeStyle = 'red';
+    for (const e of enemies) {
+      const ex = e.x - camera.x + hw;
+      const ey = e.y - camera.y + hh;
+      if (ex < -50 || ex > this.canvas.width + 50 || ey < -50 || ey > this.canvas.height + 50) continue;
+      ctx.beginPath();
+      ctx.arc(ex, ey, e.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Gems (yellow)
+    ctx.strokeStyle = 'yellow';
+    for (const g of gems) {
+      const gx = g.x - camera.x + hw;
+      const gy = g.y - camera.y + hh;
+      ctx.beginPath();
+      ctx.arc(gx, gy, g.size, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  },
 };

@@ -1,4 +1,27 @@
-/** Core game state and update loop. */
+/**
+ * Core game state and update loop.
+ *
+ * === Event-Driven Architecture (Event Flow) ===
+ *
+ * 1. Enemy killed (projectile collision):
+ *    → eventBus.emit('enemyDied', { x, y, xp, color, enemyType })
+ *    → listener spawns gem + particles (decoupled from collision code)
+ *
+ * 2. Player picks up XP gem:
+ *    → eventBus.emit('xpGained', { amount, totalXp, xpToLevel, level })
+ *    → HUD listener updates XP bar display
+ *
+ * 3. Player levels up:
+ *    → eventBus.emit('playerLevelUp', { newLevel, xpToLevel })
+ *    → listener shows level-up overlay
+ *
+ * 4. Player takes damage:
+ *    → eventBus.emit('playerDamaged', { damage, currentHp, maxHp })
+ *    → HUD listener updates HP bar display
+ *
+ * 5. Cheat key [E]:
+ *    → Directly emits 'xpGained' event to verify UI independently
+ */
 
 import { CONFIG } from '../config/index.js';
 import type {
@@ -23,6 +46,7 @@ import {
 } from '../entities/weapons.js';
 import { angleTo, clamp, dist, formatTime, randFloat, spawnOutsideView } from './utils.js';
 import { Renderer } from '../rendering/renderer.js';
+import { eventBus } from '../core/EventBus.js';
 
 export const Game = {
   state: 'menu' as string,
@@ -41,6 +65,9 @@ export const Game = {
   maxEnemies: CONFIG.spawn.maxEnemies,
   lastTime: 0,
 
+  /** Whether event listeners have been registered (only once). */
+  _eventsRegistered: false,
+
   init(): void {
     this.player = createPlayer();
     this.enemies = [];
@@ -56,6 +83,100 @@ export const Game = {
     this.spawnInterval = CONFIG.spawn.baseInterval;
     this.state = 'playing';
     this.lastTime = performance.now();
+
+    this._registerEvents();
+  },
+
+  /**
+   * Register EventBus listeners and cheat key (once).
+   * Event flow:
+   *   enemyDied   → spawn gem + death particles
+   *   xpGained    → update XP bar in HUD
+   *   playerLevelUp → show level-up overlay
+   *   playerDamaged → update HP bar in HUD
+   */
+  _registerEvents(): void {
+    if (this._eventsRegistered) return;
+    this._eventsRegistered = true;
+
+    // --- enemyDied: spawn gem + particles (decoupled from collision) ---
+    eventBus.on('enemyDied', (...args: unknown[]) => {
+      const data = args[0] as { x: number; y: number; xp: number; color: string; enemyType: string };
+      console.log(
+        `[Event:enemyDied] type=${data.enemyType} xp=${data.xp} pos=(${data.x.toFixed(1)},${data.y.toFixed(1)})`,
+      );
+      const { gem: gemCfg } = CONFIG;
+      this.gems.push({
+        x: data.x,
+        y: data.y,
+        xp: data.xp,
+        size: gemCfg.baseSize + data.xp,
+        color:
+          data.xp >= gemCfg.highXpThreshold
+            ? gemCfg.highXpColor
+            : data.xp >= gemCfg.midXpThreshold
+              ? gemCfg.midXpColor
+              : gemCfg.lowXpColor,
+      });
+      this.addParticles(data.x, data.y, data.color, CONFIG.effects.deathParticleCount);
+    });
+
+    // --- xpGained: update XP bar UI ---
+    eventBus.on('xpGained', (...args: unknown[]) => {
+      const data = args[0] as { amount: number; totalXp: number; xpToLevel: number; level: number };
+      console.log(
+        `[Event:xpGained] +${data.amount} XP → total=${data.totalXp}/${data.xpToLevel} (Lv.${data.level})`,
+      );
+      const xpBar = document.getElementById('xp-bar');
+      const xpText = document.getElementById('xp-text');
+      if (xpBar) xpBar.style.width = clamp((data.totalXp / data.xpToLevel) * 100, 0, 100) + '%';
+      if (xpText) xpText.textContent = 'XP: ' + data.totalXp + ' / ' + data.xpToLevel;
+      console.log(`[UI:xpBar] width=${xpBar?.style.width} text=${xpText?.textContent}`);
+    });
+
+    // --- playerLevelUp: show level-up overlay ---
+    eventBus.on('playerLevelUp', (...args: unknown[]) => {
+      const data = args[0] as { newLevel: number; xpToLevel: number };
+      console.log(`[Event:playerLevelUp] Lv.${data.newLevel} nextXP=${data.xpToLevel}`);
+      const levelDisp = document.getElementById('level-display');
+      if (levelDisp) levelDisp.textContent = 'Lv.' + data.newLevel;
+      this.showLevelUp();
+    });
+
+    // --- playerDamaged: update HP bar UI ---
+    eventBus.on('playerDamaged', (...args: unknown[]) => {
+      const data = args[0] as { damage: number; currentHp: number; maxHp: number };
+      console.log(`[Event:playerDamaged] -${data.damage} HP → ${Math.ceil(data.currentHp)}/${data.maxHp}`);
+      const hpBar = document.getElementById('hp-bar');
+      const hpText = document.getElementById('hp-text');
+      if (hpBar) hpBar.style.width = clamp((data.currentHp / data.maxHp) * 100, 0, 100) + '%';
+      if (hpText) hpText.textContent = 'HP: ' + Math.ceil(data.currentHp) + ' / ' + data.maxHp;
+      console.log(`[UI:hpBar] width=${hpBar?.style.width} text=${hpText?.textContent}`);
+    });
+
+    // --- Cheat key [E]: simulate gaining 5 XP for independent UI testing ---
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'e') return;
+      if (this.state !== 'playing' || !this.player) return;
+
+      const cheatXp = 5;
+      console.log(`[Cheat:E] Simulating +${cheatXp} XP gain`);
+      const leveled = addXP(this.player, cheatXp);
+
+      eventBus.emit('xpGained', {
+        amount: cheatXp,
+        totalXp: this.player.xp,
+        xpToLevel: this.player.xpToLevel,
+        level: this.player.level,
+      });
+
+      if (leveled) {
+        eventBus.emit('playerLevelUp', {
+          newLevel: this.player.level,
+          xpToLevel: this.player.xpToLevel,
+        });
+      }
+    });
   },
 
   update(inputDir: InputDirection): void {
@@ -148,12 +269,21 @@ export const Game = {
       if (e.attackCooldown <= 0) {
         const d = dist(e, player);
         if (d < e.radius + player.radius) {
+          console.log(
+            `[Collision] enemy=${e.type} hit player, dist=${d.toFixed(1)}, threshold=${(e.radius + player.radius).toFixed(1)}`,
+          );
           if (damagePlayer(player, e.damage)) {
             const dmg = Math.max(CONFIG.combat.minDamage, e.damage - player.armor);
             this.addDamageNumber(player.x, player.y - 20, '-' + dmg, '#ff4444', 18);
             const ka = angleTo(e, player);
             player.x += Math.cos(ka) * CONFIG.combat.knockbackDistance;
             player.y += Math.sin(ka) * CONFIG.combat.knockbackDistance;
+
+            eventBus.emit('playerDamaged', {
+              damage: dmg,
+              currentHp: player.hp,
+              maxHp: player.maxHp,
+            });
           }
           e.attackCooldown = CONFIG.combat.attackCooldown;
         }
@@ -203,20 +333,16 @@ export const Game = {
 
         if (e.hp <= 0) {
           this.kills++;
-          const { gem: gemCfg } = CONFIG;
-          this.gems.push({
+          console.log(
+            `[EnemyDied] type=${e.type} xp=${e.xp} kills=${this.kills} pos=(${e.x.toFixed(1)},${e.y.toFixed(1)})`,
+          );
+          eventBus.emit('enemyDied', {
             x: e.x,
             y: e.y,
             xp: e.xp,
-            size: gemCfg.baseSize + e.xp,
-            color:
-              e.xp >= gemCfg.highXpThreshold
-                ? gemCfg.highXpColor
-                : e.xp >= gemCfg.midXpThreshold
-                  ? gemCfg.midXpColor
-                  : gemCfg.lowXpColor,
+            color: e.color,
+            enemyType: e.type,
           });
-          this.addParticles(e.x, e.y, e.color, CONFIG.effects.deathParticleCount);
           this.enemies.splice(j, 1);
         }
 
@@ -242,8 +368,21 @@ export const Game = {
         g.y += Math.sin(a) * speed * dt;
 
         if (dist(player, g) < CONFIG.gem.pickupDistance) {
-          if (addXP(player, g.xp)) {
-            this.showLevelUp();
+          console.log(`[GemPickup] xp=${g.xp} pos=(${g.x.toFixed(1)},${g.y.toFixed(1)})`);
+          const leveled = addXP(player, g.xp);
+
+          eventBus.emit('xpGained', {
+            amount: g.xp,
+            totalXp: player.xp,
+            xpToLevel: player.xpToLevel,
+            level: player.level,
+          });
+
+          if (leveled) {
+            eventBus.emit('playerLevelUp', {
+              newLevel: player.level,
+              xpToLevel: player.xpToLevel,
+            });
           }
           this.gems.splice(i, 1);
         }
@@ -313,6 +452,11 @@ export const Game = {
     this.renderParticles();
     Renderer.drawPlayer(this.player, this.camera);
     for (const d of this.damageNumbers) Renderer.drawDamageNumber(d, this.camera);
+
+    // Draw collision debug circles when physics debug is enabled
+    if (CONFIG.physics.debug) {
+      Renderer.drawDebugColliders(this.player, this.enemies, this.gems, this.camera);
+    }
   },
 
   renderParticles(): void {
@@ -336,6 +480,11 @@ export const Game = {
   updateHUD(): void {
     if (!this.player) return;
     const p = this.player;
+
+    // HP and XP bars are now updated via EventBus events
+    // (playerDamaged → HP bar, xpGained → XP bar).
+    // Here we only update the non-event-driven HUD items,
+    // plus do a sync pass in case events were missed (e.g. regen).
 
     const hpBar = document.getElementById('hp-bar');
     const hpText = document.getElementById('hp-text');
