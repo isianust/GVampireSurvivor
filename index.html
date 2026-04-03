@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GVampire Survivor V2</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 </head>
 <body>
     <!-- Instruction Overlay -->
@@ -99,8 +100,8 @@
         </div>
     </div>
 
-    <!-- Canvas -->
-    <canvas id="gameCanvas"></canvas>
+    <!-- Phaser will create its own canvas inside #game-container -->
+    <div id="game-container"></div>
 
     <!-- Mobile Joystick -->
     <div id="joystick-area" class="hidden">
@@ -109,6 +110,6 @@
         </div>
     </div>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script src="game.js"></script>
 </body>
 </html>
