@@ -6,19 +6,19 @@
  */
 
 /* ===== Constants ===== */
-var WORLD_WIDTH = 3000;
-var WORLD_HEIGHT = 3000;
-var PLAYER_SPEED = 200;
-var PLAYER_SIZE = 28;
-var ENEMY_SPEED = 80;
-var ENEMY_SIZE = 24;
-var ENEMY_SPAWN_INTERVAL = 1000;   // ms
-var PROJECTILE_SPEED = 400;
-var PROJECTILE_SIZE = 10;
-var ATTACK_INTERVAL = 1500;        // ms
+const WORLD_WIDTH = 3000;
+const WORLD_HEIGHT = 3000;
+const PLAYER_SPEED = 200;
+const PLAYER_SIZE = 28;
+const ENEMY_SPEED = 80;
+const ENEMY_SIZE = 24;
+const ENEMY_SPAWN_INTERVAL = 1000;   // ms
+const PROJECTILE_SPEED = 400;
+const PROJECTILE_SIZE = 10;
+const ATTACK_INTERVAL = 1500;        // ms
 
 /* ===== MainScene ===== */
-var MainScene = new Phaser.Class({
+const MainScene = new Phaser.Class({
   Extends: Phaser.Scene,
 
   initialize: function MainScene() {
