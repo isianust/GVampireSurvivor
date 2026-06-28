@@ -3,7 +3,7 @@
 var ENEMY_TYPES = {
     skeleton: {
         name: 'Skeleton',
-        cn: '骷髏',
+        cn: '枯骨',
         hp: 8,
         speed: 55,
         damage: 5,
@@ -14,7 +14,7 @@ var ENEMY_TYPES = {
     },
     zombie: {
         name: 'Zombie',
-        cn: '殭屍',
+        cn: '行屍',
         hp: 20,
         speed: 30,
         damage: 8,
@@ -25,7 +25,7 @@ var ENEMY_TYPES = {
     },
     bat: {
         name: 'Bat',
-        cn: '蝙蝠',
+        cn: '血蝠',
         hp: 5,
         speed: 100,
         damage: 3,
@@ -36,7 +36,7 @@ var ENEMY_TYPES = {
     },
     ghost: {
         name: 'Ghost',
-        cn: '幽靈',
+        cn: '厲鬼',
         hp: 12,
         speed: 50,
         damage: 6,
@@ -47,7 +47,7 @@ var ENEMY_TYPES = {
     },
     spider: {
         name: 'Spider',
-        cn: '蜘蛛',
+        cn: '毒蛛',
         hp: 10,
         speed: 80,
         damage: 4,
@@ -58,7 +58,7 @@ var ENEMY_TYPES = {
     },
     werewolf: {
         name: 'Werewolf',
-        cn: '狼人',
+        cn: '狼妖',
         hp: 40,
         speed: 70,
         damage: 12,
@@ -69,7 +69,7 @@ var ENEMY_TYPES = {
     },
     warlock: {
         name: 'Warlock',
-        cn: '術士',
+        cn: '邪術士',
         hp: 25,
         speed: 40,
         damage: 10,
@@ -80,7 +80,7 @@ var ENEMY_TYPES = {
     },
     vampire: {
         name: 'Vampire',
-        cn: '吸血鬼',
+        cn: '血魔',
         hp: 50,
         speed: 60,
         damage: 14,
@@ -91,7 +91,7 @@ var ENEMY_TYPES = {
     },
     drake: {
         name: 'Drake',
-        cn: '飛龍',
+        cn: '蛟龍',
         hp: 70,
         speed: 55,
         damage: 18,
@@ -102,7 +102,7 @@ var ENEMY_TYPES = {
     },
     demon: {
         name: 'Demon Lord',
-        cn: '惡魔領主',
+        cn: '魔教護法',
         hp: 200,
         speed: 45,
         damage: 25,
@@ -115,7 +115,7 @@ var ENEMY_TYPES = {
     // normal weighted spawner never picks them) -----
     lich: {
         name: 'Lich',
-        cn: '巫妖',
+        cn: '屍王',
         hp: 350,
         speed: 35,
         damage: 22,
@@ -126,7 +126,7 @@ var ENEMY_TYPES = {
     },
     reaper: {
         name: 'Reaper',
-        cn: '死神',
+        cn: '索命無常',
         hp: 500,
         speed: 52,
         damage: 30,
@@ -144,6 +144,30 @@ var RANGED_ENEMIES = {
     drake: { projColor: '#ff7733', projSpeed: 200, cooldown: 2.6, range: 480, projRadius: 7 },
     lich: { projColor: '#66ffcc', projSpeed: 190, cooldown: 1.6, range: 560, projRadius: 8 },
     reaper: { projColor: '#cc66ff', projSpeed: 230, cooldown: 1.3, range: 600, projRadius: 9 }
+};
+
+/* ===== BOSS 能力表 BOSS_ABILITIES =====
+ * 純數據表，按敵人 type 描述 BOSS 專屬能力（只有 isBoss 時生效，見 game.js）。
+ * 加新 BOSS 能力只要喺呢度加一行，唔使改引擎邏輯。支援欄位：
+ *   enrage  { hpPct 觸發血量百分比, speedMult 移速倍率, damageMult 傷害倍率 } —— 殘血暴怒（只觸發一次）
+ *   summon  { type 召喚物, count 每次數量, interval 秒, max 場上上限 }     —— 定時召喚小怪
+ *   name    武俠風能力名（顯示用） */
+var BOSS_ABILITIES = {
+    demon: {
+        name: '魔教護法 · 血祭召魂',
+        enrage: { hpPct: 0.35, speedMult: 1.4, damageMult: 1.3 },
+        summon: { type: 'skeleton', count: 3, interval: 6, max: 24 }
+    },
+    lich: {
+        name: '屍王 · 役屍成軍',
+        enrage: { hpPct: 0.4, speedMult: 1.3, damageMult: 1.25 },
+        summon: { type: 'zombie', count: 2, interval: 5, max: 20 }
+    },
+    reaper: {
+        name: '索命無常 · 厲鬼索魂',
+        enrage: { hpPct: 0.5, speedMult: 1.5, damageMult: 1.4 },
+        summon: { type: 'ghost', count: 3, interval: 4.5, max: 26 }
+    }
 };
 
 var HP_SCALE_INTERVAL = 60;       // scale HP every N seconds

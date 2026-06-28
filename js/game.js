@@ -165,17 +165,19 @@ var Game = {
         if (Input.consumePress('u') || Input.consumePress(' ')) Skills.activateUlt(this);
     },
 
-    /** Trigger Dash in the current movement/facing direction. */
-    dashPlayer: function () {
+    /** Trigger Dash in the current movement/facing direction.
+     * `dist` 位移距離、`inv` 無敵秒數 由技能表傳入（缺省值維持原本行為）。 */
+    dashPlayer: function (dist, inv) {
         var p = this.player;
         var dx = this.lastDir.x, dy = this.lastDir.y;
         var m = Math.sqrt(dx * dx + dy * dy);
         if (m < 0.01) { dx = p.facingX; dy = p.facingY; m = Math.sqrt(dx * dx + dy * dy) || 1; }
         dx /= m; dy /= m;
-        p.x += dx * 110;
-        p.y += dy * 110;
+        var d = dist || 110;
+        p.x += dx * d;
+        p.y += dy * d;
         p.dashTimer = 0.18;
-        p.invTimer = Math.max(p.invTimer, 0.4);
+        p.invTimer = Math.max(p.invTimer, inv || 0.4);
         this.addParticles(p.x, p.y, '#cfe8ff', 14);
     },
 
@@ -261,9 +263,51 @@ var Game = {
         boss.radius *= 1.4;
         boss.isBoss = true;
         if (label) boss.bossLabel = label;
+        // Attach data-driven boss ability (enrage / summon), if any — guarded so
+        // bosses with no entry behave exactly as before.
+        var ability = (typeof BOSS_ABILITIES !== 'undefined') ? BOSS_ABILITIES[type] : null;
+        if (ability) {
+            boss.ability = ability;
+            boss.enraged = false;
+            boss.summonTimer = (ability.summon && ability.summon.interval) || 0;
+        }
         this.enemies.push(boss);
         var msg = label ? ('⚠ ' + label + ' 出現!') : '⚠ BOSS 出現!';
         this.addDamageNumber(this.player.x, this.player.y - 60, msg, '#ff4444', 24);
+    },
+
+    /** Drive a boss's data-driven ability each frame (enrage + summon). */
+    updateBossAbility: function (e, dt) {
+        var ab = e.ability;
+        // Enrage: once HP drops below threshold, buff speed/damage a single time.
+        if (ab.enrage && !e.enraged && e.hp <= e.maxHp * ab.enrage.hpPct) {
+            e.enraged = true;
+            e.speed *= (ab.enrage.speedMult || 1);
+            e.damage = Math.round(e.damage * (ab.enrage.damageMult || 1));
+            this.addParticles(e.x, e.y, '#ff3344', 30);
+            this.addDamageNumber(e.x, e.y - e.radius - 10, '暴怒!', '#ff5555', 20);
+        }
+        // Summon: periodically spawn minions, capped by `max` total enemies.
+        if (ab.summon) {
+            e.summonTimer -= dt;
+            if (e.summonTimer <= 0) {
+                e.summonTimer = ab.summon.interval || 5;
+                if (this.enemies.length < (ab.summon.max || 24)) {
+                    var n = ab.summon.count || 1;
+                    for (var s = 0; s < n; s++) {
+                        var ang = Math.random() * Math.PI * 2;
+                        var minion = createEnemy(
+                            ab.summon.type,
+                            e.x + Math.cos(ang) * (e.radius + 20),
+                            e.y + Math.sin(ang) * (e.radius + 20),
+                            this.elapsed
+                        );
+                        this.enemies.push(minion);
+                    }
+                    this.addParticles(e.x, e.y, '#aa66ff', 18);
+                }
+            }
+        }
     },
 
     /** Apply damage to enemy at index; centralizes kill → gem/XP/charge/lifesteal. */
@@ -335,6 +379,11 @@ var Game = {
                     this.fireEnemyProjectile(e);
                     e.rangeTimer = e.ranged.cooldown;
                 }
+            }
+
+            // Boss abilities (data-driven, see BOSS_ABILITIES) — additive & guarded
+            if (e.isBoss && e.ability) {
+                this.updateBossAbility(e, dt);
             }
 
             // Collision with player

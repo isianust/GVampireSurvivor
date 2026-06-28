@@ -37,10 +37,10 @@ npm run dev
 Choose 1 of 4 classes — **every class starts with a ranged default attack** —
 each with its own stats, three active skills, and a signature ultimate
 (ultimate is on a **60s cooldown**):
-- **魔法師 Mage** — glass cannon; ranged fireball; ult *隕石風暴 Meteor Storm*
-- **劍客 Swordsman** — balanced; ranged 劍氣 Sword Qi; ult *天劍式 Sky Blade*
-- **刺客 Assassin** — fast; ranged 暗器飛刀 Throwing Knife; ult *影殺 Shadow Kill*
-- **藥師 Apothecary** — high sustain; ranged 藥彈 Potion Bomb; ult *甘霖 Sweet Dew*
+- **玄陰真人 Mage** — glass cannon; ranged 烈火真訣 Inferno Orb; ult *九天隕星訣 Meteor Storm*
+- **神劍傲洲 Swordsman** — balanced; ranged 凌厲劍氣 Sword Qi; ult *天外飛仙 Sky Blade*
+- **夜無痕 Assassin** — fast; ranged 奪命飛刀 Throwing Knife; ult *奪命無常 Shadow Kill*
+- **百草藥師 Apothecary** — high sustain; ranged 霹靂藥彈 Potion Bomb; ult *普渡慈航 Sweet Dew*
 
 ### ⚡ Active skills + 💥 Ultimate (you're in control)
 Movement is **WASD / arrows**; abilities are triggered by you. Each class has its
