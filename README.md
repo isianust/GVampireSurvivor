@@ -182,6 +182,59 @@ Every push and PR triggers:
 
 ---
 
+## ✅ End-to-End Test (Verified) / 端對端測試
+
+The full game was play-tested **end to end** in a real browser — you can play it
+with the **keyboard**, and it runs as **pure HTML** with no build step.
+本遊戲已在真實瀏覽器中完整「端對端」實測：可用**鍵盤**遊玩，並能以**純 HTML**
+直接開啟（不需編譯）。
+
+### How to play & test by hand / 手動遊玩與測試
+
+1. **Open the game (pure HTML):** double-click `index.html`, *or* serve the
+   folder and browse to it:
+   ```bash
+   python3 -m http.server 8099   # then open http://localhost:8099/index.html
+   ```
+   (`npm run dev` also works for live-reload.)
+2. On the intro screen press **⚔️ 選擇英雄 / CHOOSE HERO**.
+3. Pick **1 of the 4 heroes** — the HUD appears and the run starts.
+4. **Move** with **WASD** or the **arrow keys**.
+5. **Fire skills / ultimate** with the keys below; weapons auto-attack the
+   nearest enemy.
+6. **Level up:** collect XP gems, then **click** an upgrade card.
+7. Survive the waves & bosses until **GAME OVER**, then press
+   **🔄 再試一次 / RETRY** to play again.
+
+### ⌨️ Keyboard controls (verified) / 鍵盤操作（已驗證）
+
+| Key 按鍵 | Action 動作 |
+|----------|-------------|
+| **W A S D** / **↑ ↓ ← →** | Move 移動 |
+| **J** | Dash 衝刺 |
+| **K** | Nova 震波 |
+| **L** | Frost 冰封 |
+| **U** *(or* **Space** *)* | Ultimate 必殺技（能量集滿後可用） |
+
+> 💡 Level-up upgrades are chosen by **mouse / touch click** on a card.
+> 升級選項目前以**滑鼠 / 觸控點擊**卡片選擇。
+
+### Verified result / 實測結果
+
+- ✅ Loads as **pure HTML** (`index.html`) with **no build / no install**.
+- ✅ Hero select → HUD → gameplay → level-up → game-over → retry all work.
+- ✅ Movement (WASD / arrows) and skills (J / K / L / U / Space) respond to the
+  **keyboard**; enemies spawn and weapons auto-attack.
+- ✅ Logic suite passes: **225 unit tests**, plus ESLint, type-check and build.
+- ℹ️ Missing pixel-art PNGs in `assets/` log harmless `404`s and **fall back to
+  built-in vector art** by design (see `js/assets.js`) — not an error.
+
+> The unit tests (`npm test`) cover the pure game logic in `src/`. The keyboard /
+> HTML playthrough above is the manual end-to-end check for the shipping `js/`
+> runtime.
+
+---
+
 ## 📱 Mobile Support
 
 - Responsive canvas that fills the screen
