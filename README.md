@@ -1,17 +1,28 @@
-# 🧛 GVampire Survivor V2
+# 🧛 GVampire Survivor V3
 
 [![CI](https://github.com/isianust/GVampireSurvivor/actions/workflows/ci.yml/badge.svg)](https://github.com/isianust/GVampireSurvivor/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-A **Vampire Survivors–style** HTML5 game built with **TypeScript**, **Canvas 2D**, and **Vite**. Survive endless waves of monsters, level up, and unlock powerful weapons!
+A **Vampire Survivors–style** HTML5 game. Pick a named hero, survive endless
+waves, fire active skills, charge your ultimate, evolve your weapons, and fight
+escalating bosses.
+
+> 🟢 **Pure HTML — no install, no build.** Just open `index.html` in any modern
+> browser and play. The game runs on a hand-written Canvas 2D engine in plain
+> JavaScript (`js/`), with **zero dependencies**.
 
 ---
 
 ## 🎮 Play Now
 
-Open `index.html` in any modern browser, or run the dev server:
+**Option A — no install (recommended):**
+
+Just open `index.html` in a browser (double-click it, or serve the folder with
+any static server). That's it.
+
+**Option B — dev server (for live-reload while editing):**
 
 ```bash
 npm install
@@ -22,70 +33,74 @@ npm run dev
 
 ## ✨ Features
 
-### 🕹️ Gameplay
-- **10 Enemy Types** — Skeleton, Zombie, Bat, Ghost, Spider, Werewolf, Warlock, Vampire, Drake, Demon Lord — each with unique visuals, stats, and behaviors
-- **4 Auto-Attack Weapons** — Throwing Knife, Fireball, Holy Water, Holy Whip — each with distinct mechanics
-- **Level-Up System** — Choose from weapon upgrades, new weapons, or stat boosts on every level up
-- **Progressive Difficulty** — Enemies scale in HP over time; spawn rate increases; boss appears at 3 minutes
-- **XP Gem Magnet System** — Collect XP gems with auto-attract within your magnet range
+### 🦸 Heroes (named characters)
+Choose 1 of 4 heroes, each with a different starting weapon, stats, and a
+signature ultimate:
+- **范海辛 Van Helsing** — balanced; ult *聖光審判* damages the whole screen
+- **卡蜜拉 Carmilla** — lifesteal on kill; ult *血月* heals while damaging
+- **貝拉 Bella** — fast glass cannon; ult *隕石風暴*
+- **麥斯 Max** — tanky; ult *聖域堡壘* knockback + shield
+
+### ⚡ Active skills + 💥 Ultimate (you're in control)
+Movement is **WASD / arrows**; abilities are triggered by you:
+- **J — Dash 衝刺** (quick dash + brief i-frames)
+- **K — Nova 震波** (radial burst damage)
+- **L — Frost 冰封** (slow nearby enemies)
+- **U — Ultimate 必殺技** (charges as you kill; screen-clearing blast)
+
+### 🔀 Weapon evolution (2 → 1)
+Max out a base weapon and own its partner to **fuse them into one** stronger
+evolved weapon: Storm Blade, Inferno, Death Spiral, Sanctuary.
+
+### 👾 Enemies, ranged attacks & escalating bosses
+- 10 enemy types; **Warlock / Drake** now fire ranged projectiles
+- Scheduled bosses (Demon Lord, **Lich**, **Reaper**) then an **endless** boss
+  rotation with rising HP — longer runs stay intense
+
+### 🎨 Pixel-art ready (ComfyUI)
+Every hero / enemy / weapon / gem has a **placeholder image slot**. Drop a PNG
+into `assets/` and it's used automatically — otherwise the built-in vector art is
+used. See [`assets/README.md`](assets/README.md) and `js/assets.js`.
 
 ### 📱 Controls
-- **Keyboard** — WASD or Arrow Keys to move
-- **Mobile** — Virtual joystick on touch devices (left side of screen)
-- **Auto-Attack** — Weapons fire automatically at the nearest enemy
-
-### 🎨 Visual Polish
-- Hand-drawn Canvas 2D sprites with glow effects and shadows
-- Smooth camera follow with lerp
-- Damage numbers, hit particles, and death effects
-- Responsive UI with Gothic dark theme
+- **Move** — WASD or Arrow Keys (mobile: left-side virtual joystick)
+- **Skills / Ultimate** — J / K / L / U (mobile: on-screen buttons)
+- **Auto-Attack** — weapons fire automatically at the nearest enemy
 
 ---
 
 ## 🏗️ Architecture
 
-The project uses a **modular TypeScript architecture** with clear separation of concerns:
+This repo contains **two parallel implementations** of the same game:
+
+- **`js/` — the pure-HTML runtime that actually ships** (loaded by `index.html`).
+  Plain-JavaScript globals, a hand-written Canvas 2D engine, **no build, no
+  dependencies**. This is where V3 gameplay (heroes, skills, ultimate, evolution,
+  bosses, ranged enemies, pixel-art slots) lives.
+- **`src/` — a TypeScript mirror of the core logic** used for **unit tests
+  (225 tests)**, linting and type-checking via Vite/Vitest. Great for verifying
+  pure game logic; not required to play.
 
 ```
 GVampireSurvivor/
-├── src/
-│   ├── main.ts                  # Entry point — game loop bootstrap
-│   ├── config/
-│   │   ├── game.config.ts       # Centralised constants (no magic numbers)
-│   │   ├── definitions.ts       # Enemy & weapon data definitions
-│   │   └── index.ts             # Re-exports
-│   ├── core/
-│   │   ├── EventBus.ts          # Pub/sub event system
-│   │   ├── StateMachine.ts      # Finite state machine with guards & hooks
-│   │   ├── types.ts             # Shared TypeScript interfaces
-│   │   └── index.ts
-│   ├── entities/
-│   │   ├── player.ts            # Player creation, movement, damage, XP
-│   │   ├── enemies.ts           # Enemy creation, type selection, HP scaling
-│   │   ├── weapons.ts           # Weapon system, projectiles, upgrades
-│   │   └── index.ts
-│   ├── systems/
-│   │   ├── game.ts              # Core game state & update loop
-│   │   ├── input.ts             # Keyboard + touch joystick handler
-│   │   └── utils.ts             # Pure math/collision/formatting utilities
-│   └── rendering/
-│       └── renderer.ts          # Canvas 2D renderer
-├── tests/                       # Vitest unit tests (225 tests)
-│   ├── utils.test.ts            # Math, collision, formatting
-│   ├── EventBus.test.ts         # Event system
-│   ├── StateMachine.test.ts     # State machine
-│   ├── config.test.ts           # Configuration validation
-│   ├── enemies.test.ts          # Enemy creation & type selection
-│   ├── player.test.ts           # Player mechanics
-│   └── weapons.test.ts          # Weapon system & upgrades
-├── css/style.css                # Responsive styles, overlays, mobile joystick
-├── index.html                   # Game HTML with HUD and overlays
-├── js/                          # Legacy vanilla JS (preserved for reference)
-├── vite.config.ts               # Vite build configuration
-├── vitest.config.ts             # Test configuration
-├── tsconfig.json                # TypeScript configuration
-├── eslint.config.js             # ESLint flat config
-├── .prettierrc                  # Prettier formatting rules
+├── index.html                  # Entry point — loads the js/ pure-HTML build
+├── js/                         # ▶ Playable build (no install / no build)
+│   ├── assets.js               #   Pixel-art asset LIST + placeholder loader (ComfyUI)
+│   ├── characters.js           #   Named heroes (start weapon / stats / ultimate)
+│   ├── skills.js               #   Active skills (J/K/L) + ultimates (U)
+│   ├── enemies.js              #   Enemy + boss defs, ranged-enemy config
+│   ├── player.js               #   Player state, movement, dash, charge
+│   ├── weapons.js              #   Weapons, evolution (2→1), upgrades
+│   ├── input.js                #   Keyboard + edge presses + touch joystick/buttons
+│   ├── renderer.js             #   Canvas 2D renderer (+ sprite override hooks)
+│   ├── game.js                 #   Core loop, bosses, skills, enemy projectiles
+│   └── main.js                 #   Bootstrap + character-select flow
+├── assets/                     # Pixel-art drop folder (see assets/README.md)
+├── src/                        # TypeScript logic mirror (unit-tested)
+├── tests/                      # Vitest unit tests (225 tests)
+├── css/style.css               # Responsive styles, overlays, skills/ult HUD
+├── game.js                     # Legacy Phaser prototype (no longer loaded)
+├── vite.config.ts              # Vite config (dev server / tests)
 └── .github/workflows/ci.yml    # GitHub Actions CI pipeline
 ```
 
@@ -167,6 +182,59 @@ Every push and PR triggers:
 
 ---
 
+## ✅ End-to-End Test (Verified) / 端對端測試
+
+The full game was play-tested **end to end** in a real browser — you can play it
+with the **keyboard**, and it runs as **pure HTML** with no build step.
+本遊戲已在真實瀏覽器中完整「端對端」實測：可用**鍵盤**遊玩，並能以**純 HTML**
+直接開啟（不需編譯）。
+
+### How to play & test by hand / 手動遊玩與測試
+
+1. **Open the game (pure HTML):** double-click `index.html`, *or* serve the
+   folder and browse to it:
+   ```bash
+   python3 -m http.server 8099   # then open http://localhost:8099/index.html
+   ```
+   (`npm run dev` also works for live-reload.)
+2. On the intro screen press **⚔️ 選擇英雄 / CHOOSE HERO**.
+3. Pick **1 of the 4 heroes** — the HUD appears and the run starts.
+4. **Move** with **WASD** or the **arrow keys**.
+5. **Fire skills / ultimate** with the keys below; weapons auto-attack the
+   nearest enemy.
+6. **Level up:** collect XP gems, then **click** an upgrade card.
+7. Survive the waves & bosses until **GAME OVER**, then press
+   **🔄 再試一次 / RETRY** to play again.
+
+### ⌨️ Keyboard controls (verified) / 鍵盤操作（已驗證）
+
+| Key 按鍵 | Action 動作 |
+|----------|-------------|
+| **W A S D** / **↑ ↓ ← →** | Move 移動 |
+| **J** | Dash 衝刺 |
+| **K** | Nova 震波 |
+| **L** | Frost 冰封 |
+| **U** *(or* **Space** *)* | Ultimate 必殺技（能量集滿後可用） |
+
+> 💡 Level-up upgrades are chosen by **mouse / touch click** on a card.
+> 升級選項目前以**滑鼠 / 觸控點擊**卡片選擇。
+
+### Verified result / 實測結果
+
+- ✅ Loads as **pure HTML** (`index.html`) with **no build / no install**.
+- ✅ Hero select → HUD → gameplay → level-up → game-over → retry all work.
+- ✅ Movement (WASD / arrows) and skills (J / K / L / U / Space) respond to the
+  **keyboard**; enemies spawn and weapons auto-attack.
+- ✅ Logic suite passes: **225 unit tests**, plus ESLint, type-check and build.
+- ℹ️ Missing pixel-art PNGs in `assets/` log harmless `404`s and **fall back to
+  built-in vector art** by design (see `js/assets.js`) — not an error.
+
+> The unit tests (`npm test`) cover the pure game logic in `src/`. The keyboard /
+> HTML playthrough above is the manual end-to-end check for the shipping `js/`
+> runtime.
+
+---
+
 ## 📱 Mobile Support
 
 - Responsive canvas that fills the screen
@@ -179,10 +247,14 @@ Every push and PR triggers:
 
 ## 🗺️ Roadmap
 
+- [x] Multiple playable characters (named heroes)
+- [x] Active skills + ultimate abilities
+- [x] Weapon evolution system (combine two weapons)
+- [x] Additional bosses + endless boss rotation
+- [x] Ranged enemy attacks
+- [x] Pixel-art asset slots (ComfyUI placeholders)
 - [ ] Sound effects with Web Audio API
 - [ ] Save/load system with LocalStorage
-- [ ] Multiple playable characters
-- [ ] Weapon evolution system (combine two weapons)
 - [ ] Multiple maps with terrain
 - [ ] Online leaderboard
 - [ ] PWA support for offline play

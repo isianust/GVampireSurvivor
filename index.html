@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GVampire Survivor V2</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 </head>
 <body>
+    <!-- Game Canvas (pure HTML5 Canvas — no build/install required) -->
+    <canvas id="gameCanvas"></canvas>
+
     <!-- Instruction Overlay -->
     <div id="instruction-overlay">
         <div class="instruction-box">
@@ -24,15 +26,23 @@
                     <h3>🕹️ 操作方式 Controls</h3>
                     <div class="controls-grid">
                         <div class="control-item">
-                            <span class="control-key">⌨️ 鍵盤 Keyboard</span>
-                            <p>WASD 或 方向鍵 移動角色</p>
+                            <span class="control-key">⌨️ 移動 Move</span>
+                            <p>WASD 或 方向鍵</p>
                         </div>
                         <div class="control-item">
                             <span class="control-key">📱 手機 Mobile</span>
-                            <p>使用螢幕左側的虛擬搖桿控制移動</p>
+                            <p>螢幕左側虛擬搖桿移動，右側技能按鈕</p>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-key">⚡ 主動技能 Skills</span>
+                            <p>J 衝刺 Dash ・ K 震波 Nova ・ L 冰封 Frost</p>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-key">💥 必殺技 Ultimate</span>
+                            <p>能量集滿後按 U 釋放</p>
                         </div>
                     </div>
-                    <p>⚔️ 角色會自動攻擊附近的敵人！</p>
+                    <p>⚔️ 武器會自動攻擊附近的敵人，主動技能與必殺技由你掌控！</p>
                 </div>
                 <div class="instruction-section">
                     <h3>👾 敵人種類 Enemy Types (10種)</h3>
@@ -60,7 +70,16 @@
                     </ul>
                 </div>
             </div>
-            <button id="start-btn" class="glow-btn">⚔️ 開始遊戲 START GAME ⚔️</button>
+            <button id="start-btn" class="glow-btn">⚔️ 選擇英雄 CHOOSE HERO ⚔️</button>
+        </div>
+    </div>
+
+    <!-- Character Select Overlay -->
+    <div id="charselect-overlay" class="hidden">
+        <div class="instruction-box">
+            <h1>🦸 選擇英雄 CHOOSE YOUR HERO 🦸</h1>
+            <p class="charselect-hint">每位英雄有不同起始武器、屬性與專屬必殺技</p>
+            <div id="character-options"></div>
         </div>
     </div>
 
@@ -98,10 +117,14 @@
             <span id="time-display">00:00</span>
             <span id="kill-display">Kills: 0</span>
         </div>
+        <div id="hud-bottom">
+            <div id="ult-bar-container" title="必殺技能量 Ultimate">
+                <div id="ult-bar"></div>
+                <span id="ult-text">💥 U</span>
+            </div>
+            <div id="skill-bar"></div>
+        </div>
     </div>
-
-    <!-- Phaser will create its own canvas inside #game-container -->
-    <div id="game-container"></div>
 
     <!-- Mobile Joystick -->
     <div id="joystick-area" class="hidden">
@@ -110,6 +133,25 @@
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <!-- Mobile skill buttons -->
+    <div id="mobile-skills" class="hidden">
+        <button class="mobile-skill-btn" data-skill="dash">J</button>
+        <button class="mobile-skill-btn" data-skill="nova">K</button>
+        <button class="mobile-skill-btn" data-skill="frost">L</button>
+        <button class="mobile-skill-btn mobile-ult-btn" data-skill="ult">U</button>
+    </div>
+
+    <!-- Pure-HTML game scripts (plain globals, load in dependency order — no build step) -->
+    <script src="js/assets.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/characters.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>

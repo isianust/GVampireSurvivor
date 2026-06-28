@@ -1,12 +1,23 @@
 /* ===== Core Game State & Loop ===== */
 
-var BOSS_SPAWN_TIME = 180; // seconds
+/* Boss schedule: fixed early bosses, then a rotating boss every BOSS_INTERVAL
+ * seconds with escalating HP — keeps long runs intense. */
+var BOSS_SCHEDULE = [
+    { t: 120, type: 'demon' },
+    { t: 240, type: 'lich' },
+    { t: 360, type: 'reaper' },
+    { t: 480, type: 'demon' }
+];
+var BOSS_INTERVAL = 150;       // seconds between bosses after the schedule
+var BOSS_ROTATION = ['demon', 'lich', 'reaper'];
 
 var Game = {
     state: 'menu',  // menu | playing | paused | levelup | gameover
     player: null,
+    character: null,
     enemies: [],
     projectiles: [],
+    enemyProjectiles: [],
     gems: [],
     damageNumbers: [],
     particles: [],
@@ -19,20 +30,29 @@ var Game = {
     maxEnemies: 80,
     lastTime: 0,
     animFrame: 0,
+    lastDir: { x: 1, y: 0 },
+    nextBossIndex: 0,
+    nextBossTime: 0,
 
-    init: function () {
-        this.player = createPlayer();
+    init: function (character) {
+        this.character = character || (typeof getCharacter === 'function' ? getCharacter('vanhelsing') : null);
+        this.player = createPlayer(this.character);
         this.enemies = [];
         this.projectiles = [];
+        this.enemyProjectiles = [];
         this.gems = [];
         this.damageNumbers = [];
         this.particles = [];
-        this.weapons = [createWeaponState('knife')];
+        var startWeapon = (this.character && this.character.startWeapon) || 'knife';
+        this.weapons = [createWeaponState(startWeapon)];
         this.camera = { x: 0, y: 0 };
         this.elapsed = 0;
         this.kills = 0;
         this.spawnTimer = 0;
         this.spawnInterval = 1.5;
+        this.lastDir = { x: 1, y: 0 };
+        this.nextBossIndex = 0;
+        this.nextBossTime = BOSS_INTERVAL;
         this.state = 'playing';
         this.lastTime = performance.now();
     },
@@ -45,26 +65,33 @@ var Game = {
         this.lastTime = now;
         this.elapsed += dt;
 
+        // Remember last movement direction (used by Dash)
+        if (inputDir.x !== 0 || inputDir.y !== 0) {
+            this.lastDir = { x: inputDir.x, y: inputDir.y };
+        }
+
         // Update player
         updatePlayer(this.player, inputDir.x, inputDir.y, dt);
+
+        // Active skills + ultimate (keyboard J/K/L/U or mobile buttons)
+        Skills.update(this.player, dt);
+        this.handleSkillInput();
 
         // Camera follows player smoothly
         this.camera.x = lerp(this.camera.x, this.player.x, 0.1);
         this.camera.y = lerp(this.camera.y, this.player.y, 0.1);
 
-        // Spawn enemies
+        // Spawn enemies — difficulty (rate + cap) ramps up for longer runs
         this.spawnTimer -= dt;
-        // Increase difficulty over time
-        this.spawnInterval = Math.max(0.3, 1.5 - this.elapsed * 0.005);
+        this.spawnInterval = Math.max(0.25, 1.5 - this.elapsed * 0.005);
+        this.maxEnemies = Math.min(160, 80 + Math.floor(this.elapsed / 30) * 8);
         if (this.spawnTimer <= 0 && this.enemies.length < this.maxEnemies) {
             this.spawnTimer = this.spawnInterval;
             this.spawnEnemy();
         }
 
-        // Boss spawn at certain times
-        if (Math.floor(this.elapsed) === BOSS_SPAWN_TIME && this.enemies.filter(function (e) { return e.type === 'demon'; }).length === 0) {
-            this.spawnBoss();
-        }
+        // Boss schedule (escalating, endless)
+        this.updateBossSchedule();
 
         // Update enemies
         this.updateEnemies(dt);
@@ -78,6 +105,9 @@ var Game = {
         // Update projectiles
         this.updateProjectiles(dt);
 
+        // Update enemy projectiles
+        this.updateEnemyProjectiles(dt);
+
         // Update gems — attract to player
         this.updateGems(dt);
 
@@ -90,10 +120,57 @@ var Game = {
         // Update HUD
         this.updateHUD();
 
+        // Done with this frame's one-shot key presses
+        if (typeof Input !== 'undefined' && Input.clearPresses) Input.clearPresses();
+
         // Check game over
         if (this.player.hp <= 0) {
             this.state = 'gameover';
             this.showGameOver();
+        }
+    },
+
+    /** Read one-shot skill/ultimate presses and activate them. */
+    handleSkillInput: function () {
+        if (typeof Input === 'undefined' || !Input.consumePress) return;
+        if (Input.consumePress('j')) Skills.activate(this, 'dash');
+        if (Input.consumePress('k')) Skills.activate(this, 'nova');
+        if (Input.consumePress('l')) Skills.activate(this, 'frost');
+        if (Input.consumePress('u') || Input.consumePress(' ')) Skills.activateUlt(this);
+    },
+
+    /** Trigger Dash in the current movement/facing direction. */
+    dashPlayer: function () {
+        var p = this.player;
+        var dx = this.lastDir.x, dy = this.lastDir.y;
+        var m = Math.sqrt(dx * dx + dy * dy);
+        if (m < 0.01) { dx = p.facingX; dy = p.facingY; m = Math.sqrt(dx * dx + dy * dy) || 1; }
+        dx /= m; dy /= m;
+        p.x += dx * 110;
+        p.y += dy * 110;
+        p.dashTimer = 0.18;
+        p.invTimer = Math.max(p.invTimer, 0.4);
+        this.addParticles(p.x, p.y, '#cfe8ff', 14);
+    },
+
+    /** Deal damage to every enemy within radius; killBoss=true also damages bosses. */
+    areaDamage: function (x, y, radius, dmg, includeBoss) {
+        for (var i = this.enemies.length - 1; i >= 0; i--) {
+            var e = this.enemies[i];
+            if (!includeBoss && e.isBoss) continue;
+            var d = dist({ x: x, y: y }, e);
+            if (d > radius + e.radius) continue;
+            this.hitEnemy(i, dmg, x, y);
+        }
+    },
+
+    /** Slow every enemy within radius for `dur` seconds (frost). */
+    slowArea: function (x, y, radius, dur) {
+        for (var i = 0; i < this.enemies.length; i++) {
+            var e = this.enemies[i];
+            if (dist({ x: x, y: y }, e) <= radius + e.radius) {
+                e.slowTimer = Math.max(e.slowTimer, dur);
+            }
         }
     },
 
@@ -104,12 +181,79 @@ var Game = {
         this.enemies.push(enemy);
     },
 
-    spawnBoss: function () {
+    /** Spawn scheduled / rotating bosses as the run gets longer. */
+    updateBossSchedule: function () {
+        // Fixed early bosses
+        if (this.nextBossIndex < BOSS_SCHEDULE.length) {
+            var entry = BOSS_SCHEDULE[this.nextBossIndex];
+            if (this.elapsed >= entry.t) {
+                this.spawnBoss(entry.type, 1 + this.nextBossIndex * 0.25);
+                this.nextBossIndex++;
+            }
+            return;
+        }
+        // Endless rotation with escalating HP
+        if (this.elapsed >= this.nextBossTime) {
+            var idx = Math.floor(this.elapsed / BOSS_INTERVAL) % BOSS_ROTATION.length;
+            var mult = 1 + (this.elapsed / BOSS_INTERVAL) * 0.15;
+            this.spawnBoss(BOSS_ROTATION[idx], mult);
+            this.nextBossTime += BOSS_INTERVAL;
+        }
+    },
+
+    spawnBoss: function (type, hpMult) {
+        type = type || 'demon';
+        hpMult = hpMult || 1;
         var pos = spawnOutsideView(this.camera, Renderer.canvas, 200);
-        var boss = createEnemy('demon', pos.x, pos.y, this.elapsed);
-        boss.hp *= 3;
-        boss.maxHp *= 3;
+        var boss = createEnemy(type, pos.x, pos.y, this.elapsed);
+        boss.hp *= 3 * hpMult;
+        boss.maxHp *= 3 * hpMult;
+        boss.radius *= 1.4;
+        boss.isBoss = true;
         this.enemies.push(boss);
+        this.addDamageNumber(this.player.x, this.player.y - 60, '⚠ BOSS 出現!', '#ff4444', 24);
+    },
+
+    /** Apply damage to enemy at index; centralizes kill → gem/XP/charge/lifesteal. */
+    hitEnemy: function (index, dmg, srcX, srcY) {
+        var e = this.enemies[index];
+        if (!e) return false;
+        e.hp -= dmg;
+        e.hitTimer = 0.15;
+        if (srcX !== undefined) {
+            var ka = angleTo({ x: srcX, y: srcY }, e);
+            e.x += Math.cos(ka) * 5;
+            e.y += Math.sin(ka) * 5;
+        }
+        this.addDamageNumber(e.x, e.y - e.radius - 5, Math.round(dmg), '#ffcc00', 14);
+        this.addParticles(e.x, e.y, e.color, 3);
+        if (e.hp <= 0) {
+            this.killEnemy(index);
+            return true;
+        }
+        return false;
+    },
+
+    /** Remove a dead enemy and award rewards. */
+    killEnemy: function (index) {
+        var e = this.enemies[index];
+        if (!e) return;
+        this.kills++;
+        this.gems.push({
+            x: e.x,
+            y: e.y,
+            xp: e.xp,
+            size: 4 + e.xp,
+            color: e.xp >= 10 ? '#ffcc00' : e.xp >= 5 ? '#44ff44' : '#44aaff'
+        });
+        this.addParticles(e.x, e.y, e.color, e.isBoss ? 24 : 8);
+        // Ultimate charge + on-kill lifesteal (e.g. Carmilla)
+        var p = this.player;
+        p.ultCharge = Math.min(p.ultMax, p.ultCharge + (e.isBoss ? 25 : 3));
+        if (p.lifestealOnKill) {
+            p.hp = Math.min(p.maxHp, p.hp + p.lifestealOnKill);
+        }
+        this.enemies.splice(index, 1);
     },
 
     updateEnemies: function (dt) {
@@ -117,16 +261,29 @@ var Game = {
         for (var i = this.enemies.length - 1; i >= 0; i--) {
             var e = this.enemies[i];
 
+            // Slow (frost) factor
+            var spdMult = 1;
+            if (e.slowTimer > 0) { e.slowTimer -= dt; spdMult = 0.25; }
+
             // Move toward player
             var a = angleTo(e, player);
-            e.x += Math.cos(a) * e.speed * dt;
-            e.y += Math.sin(a) * e.speed * dt;
+            e.x += Math.cos(a) * e.speed * spdMult * dt;
+            e.y += Math.sin(a) * e.speed * spdMult * dt;
 
             // Hit timer
             if (e.hitTimer > 0) e.hitTimer -= dt;
 
             // Attack cooldown
             if (e.attackCooldown > 0) e.attackCooldown -= dt;
+
+            // Ranged enemies shoot at the player
+            if (e.ranged) {
+                e.rangeTimer -= dt;
+                if (e.rangeTimer <= 0 && dist(e, player) < e.ranged.range) {
+                    this.fireEnemyProjectile(e);
+                    e.rangeTimer = e.ranged.cooldown;
+                }
+            }
 
             // Collision with player
             if (circleCollide(e, player) && e.attackCooldown <= 0) {
@@ -145,9 +302,43 @@ var Game = {
                 e.hp = Math.min(e.maxHp, e.hp + e.damage * 0.3 * dt);
             }
 
-            // Remove if too far
-            if (dist(e, player) > 1200) {
+            // Remove if too far (bosses persist)
+            if (!e.isBoss && dist(e, player) > 1200) {
                 this.enemies.splice(i, 1);
+            }
+        }
+    },
+
+    /** Spawn an enemy projectile aimed at the player. */
+    fireEnemyProjectile: function (e) {
+        var a = angleTo(e, this.player);
+        var r = e.ranged;
+        this.enemyProjectiles.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(a) * r.projSpeed,
+            vy: Math.sin(a) * r.projSpeed,
+            radius: r.projRadius,
+            damage: Math.max(1, Math.round(e.damage * 0.7)),
+            color: r.projColor,
+            life: 4
+        });
+    },
+
+    updateEnemyProjectiles: function (dt) {
+        var player = this.player;
+        for (var i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+            var p = this.enemyProjectiles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt;
+            if (p.life <= 0) { this.enemyProjectiles.splice(i, 1); continue; }
+            if (dist(p, player) < p.radius + player.radius) {
+                if (damagePlayer(player, p.damage)) {
+                    this.addDamageNumber(player.x, player.y - 20, '-' + Math.max(1, p.damage - player.armor), '#ff66aa', 18);
+                }
+                this.addParticles(p.x, p.y, p.color, 5);
+                this.enemyProjectiles.splice(i, 1);
             }
         }
     },
@@ -187,18 +378,7 @@ var Game = {
 
                 // Kill enemy
                 if (e.hp <= 0) {
-                    this.kills++;
-                    // Drop gem
-                    this.gems.push({
-                        x: e.x,
-                        y: e.y,
-                        xp: e.xp,
-                        size: 4 + e.xp,
-                        color: e.xp >= 10 ? '#ffcc00' : e.xp >= 5 ? '#44ff44' : '#44aaff'
-                    });
-                    // Death particles
-                    this.addParticles(e.x, e.y, e.color, 8);
-                    this.enemies.splice(j, 1);
+                    this.killEnemy(j);
                 }
 
                 // Piercing
@@ -301,6 +481,11 @@ var Game = {
             Renderer.drawProjectile(this.projectiles[p], this.camera);
         }
 
+        // Draw enemy projectiles
+        for (var ep = 0; ep < this.enemyProjectiles.length; ep++) {
+            Renderer.drawEnemyProjectile(this.enemyProjectiles[ep], this.camera);
+        }
+
         // Draw particles
         this.renderParticles(ctx);
 
@@ -346,6 +531,55 @@ var Game = {
         levelDisp.textContent = 'Lv.' + p.level;
         timeDisp.textContent = formatTime(this.elapsed);
         killDisp.textContent = 'Kills: ' + this.kills;
+
+        // Ultimate charge bar
+        var ultBar = document.getElementById('ult-bar');
+        var ultContainer = document.getElementById('ult-bar-container');
+        if (ultBar) ultBar.style.width = clamp(p.ultCharge / p.ultMax * 100, 0, 100) + '%';
+        if (ultContainer) {
+            if (p.ultCharge >= p.ultMax) ultContainer.classList.add('ult-ready');
+            else ultContainer.classList.remove('ult-ready');
+        }
+
+        // Skill cooldown bar
+        this.updateSkillBar();
+    },
+
+    /** Build/refresh the on-screen skill cooldown indicators. */
+    updateSkillBar: function () {
+        var bar = document.getElementById('skill-bar');
+        if (!bar) return;
+        var p = this.player;
+        // Build once
+        if (bar.children.length !== SKILL_ORDER.length) {
+            bar.innerHTML = '';
+            for (var i = 0; i < SKILL_ORDER.length; i++) {
+                var def = SKILL_DEFS[SKILL_ORDER[i]];
+                var cell = document.createElement('div');
+                cell.className = 'skill-cell';
+                cell.setAttribute('data-skill', def.id);
+                cell.innerHTML =
+                    '<span class="skill-key">' + def.key.toUpperCase() + '</span>' +
+                    '<span class="skill-icon">' + def.icon + '</span>' +
+                    '<span class="skill-cd"></span>';
+                bar.appendChild(cell);
+            }
+        }
+        // Update cooldown overlays
+        for (var j = 0; j < bar.children.length; j++) {
+            var cell2 = bar.children[j];
+            var id = cell2.getAttribute('data-skill');
+            var cd = (p.skillCd && p.skillCd[id]) || 0;
+            var maxCd = SKILL_DEFS[id].cooldown;
+            var cdEl = cell2.querySelector('.skill-cd');
+            if (cd > 0) {
+                cell2.classList.add('on-cooldown');
+                if (cdEl) cdEl.style.height = clamp(cd / maxCd * 100, 0, 100) + '%';
+            } else {
+                cell2.classList.remove('on-cooldown');
+                if (cdEl) cdEl.style.height = '0%';
+            }
+        }
     },
 
     showLevelUp: function () {
@@ -378,7 +612,9 @@ var Game = {
         var overlay = document.getElementById('gameover-overlay');
         var stats = document.getElementById('final-stats');
         overlay.classList.remove('hidden');
+        var heroName = (this.character && this.character.name) || '英雄';
         stats.innerHTML =
+            '<p>🦸 英雄: <span>' + heroName + '</span></p>' +
             '<p>⏱️ 存活時間: <span>' + formatTime(this.elapsed) + '</span></p>' +
             '<p>💀 擊殺數: <span>' + this.kills + '</span></p>' +
             '<p>⭐ 等級: <span>Lv.' + this.player.level + '</span></p>';

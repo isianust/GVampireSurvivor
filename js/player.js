@@ -1,7 +1,10 @@
 /* ===== Player ===== */
 
-function createPlayer() {
-    return {
+function createPlayer(character) {
+    var c = character || (typeof getCharacter === 'function' ? getCharacter('vanhelsing') : null);
+    var mods = (c && c.mods) || {};
+    var ult = (c && c.ult) || 'judgement';
+    var player = {
         x: 0,
         y: 0,
         vx: 0,
@@ -19,8 +22,31 @@ function createPlayer() {
         armor: 0,
         regen: 0,             // HP per second
         magnetRange: 60,      // XP pickup range
-        speedMult: 1.0
+        speedMult: 1.0,
+        // Character identity
+        charId: (c && c.id) || 'vanhelsing',
+        color: (c && c.color) || '#3b5998',
+        lifestealOnKill: mods.lifestealOnKill || 0,
+        // Active skills (cooldowns in seconds) + facing for dash
+        skillCd: { dash: 0, nova: 0, frost: 0 },
+        facingX: 1,
+        facingY: 0,
+        dashTimer: 0,
+        // Ultimate / 必殺技 charge meter
+        ultId: ult,
+        ultCharge: 0,
+        ultMax: 100
     };
+
+    // Apply character stat modifiers
+    player.maxHp += (mods.maxHp || 0);
+    player.hp = player.maxHp;
+    player.armor += (mods.armor || 0);
+    player.regen += (mods.regen || 0);
+    player.magnetRange += (mods.magnetRange || 0);
+    player.speedMult += (mods.speedMult || 0);
+
+    return player;
 }
 
 function updatePlayer(player, dx, dy, dt) {
@@ -30,7 +56,18 @@ function updatePlayer(player, dx, dy, dt) {
         dx /= mag;
         dy /= mag;
     }
+    // Remember facing direction (for Dash) when moving
+    if (mag > 0.01) {
+        var fl = Math.sqrt(dx * dx + dy * dy) || 1;
+        player.facingX = dx / fl;
+        player.facingY = dy / fl;
+    }
     var spd = player.speed * player.speedMult;
+    // Dash burst overrides normal movement briefly
+    if (player.dashTimer > 0) {
+        player.dashTimer -= dt;
+        spd *= 3.2;
+    }
     player.vx = dx * spd;
     player.vy = dy * spd;
     player.x += player.vx * dt;

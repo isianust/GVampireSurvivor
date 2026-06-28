@@ -26,6 +26,23 @@ var Renderer = {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
 
+    /**
+     * Draw a registered sprite (pixel art) centred at the current canvas
+     * origin (assumes caller already translated). Returns true if drawn,
+     * false to signal "use the procedural fallback".
+     */
+    _sprite: function (key, size) {
+        if (typeof Assets === 'undefined') return false;
+        var img = Assets.get(key);
+        if (!img) return false;
+        var ctx = this.ctx;
+        var prev = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false; // crisp pixel art
+        ctx.drawImage(img, -size / 2, -size / 2, size, size);
+        ctx.imageSmoothingEnabled = prev;
+        return true;
+    },
+
     /** Draw tiled ground with grass detail */
     drawGround: function (camera) {
         var ctx = this.ctx;
@@ -89,6 +106,17 @@ var Renderer = {
 
         ctx.save();
         ctx.translate(sx, sy);
+
+        // Pixel-art sprite override (ComfyUI) — falls back to vector art below
+        if (typeof Assets !== 'undefined' && Assets.has('char_' + player.charId)) {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(0, r * 0.9, r * 0.9, r * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            this._sprite('char_' + player.charId, r * 2.6);
+            ctx.restore();
+            return;
+        }
 
         // Aura glow
         var auraGrad = ctx.createRadialGradient(0, 0, r, 0, 0, r * 3);
@@ -184,8 +212,10 @@ var Renderer = {
             ctx.globalAlpha = 0.6 + Math.sin(t * 20) * 0.4;
         }
 
-        // Draw based on type
-        EnemyRenderer.draw(ctx, enemy, r, t);
+        // Draw based on type — pixel-art sprite override, else vector art
+        if (!this._sprite('enemy_' + enemy.type, r * 2.6)) {
+            EnemyRenderer.draw(ctx, enemy, r, t);
+        }
 
         // HP bar
         if (enemy.hp < enemy.maxHp) {
@@ -215,6 +245,12 @@ var Renderer = {
 
         ctx.save();
         ctx.translate(sx, sy + bob);
+
+        // Pixel-art sprite override (ComfyUI)
+        if (this._sprite('gem', (gem.size || 5) * 2.4)) {
+            ctx.restore();
+            return;
+        }
 
         // Glow
         ctx.shadowColor = gem.color || '#44aaff';
@@ -257,6 +293,13 @@ var Renderer = {
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(proj.angle || 0);
+
+        // Pixel-art sprite override (ComfyUI) — falls back to vector art below
+        var pkey = proj.assetKey || ('proj_' + proj.type);
+        if (this._sprite(pkey, (proj.radius || 6) * 2.2)) {
+            ctx.restore();
+            return;
+        }
 
         if (proj.type === 'knife') {
             // Throwing knife
@@ -308,6 +351,33 @@ var Renderer = {
             ctx.fill();
         }
 
+        ctx.restore();
+    },
+
+    /** Draw an enemy projectile (glowing orb). */
+    drawEnemyProjectile: function (proj, camera) {
+        var ctx = this.ctx;
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var sx = proj.x - camera.x + w / 2;
+        var sy = proj.y - camera.y + h / 2;
+        if (sx < -30 || sx > w + 30 || sy < -30 || sy > h + 30) return;
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        if (!this._sprite('proj_enemy', (proj.radius || 6) * 2.4)) {
+            ctx.shadowColor = proj.color || '#cc66ff';
+            ctx.shadowBlur = 10;
+            var g = ctx.createRadialGradient(0, 0, 1, 0, 0, proj.radius || 6);
+            g.addColorStop(0, '#ffffff');
+            g.addColorStop(0.4, proj.color || '#cc66ff');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, proj.radius || 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
         ctx.restore();
     },
 
