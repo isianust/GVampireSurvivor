@@ -18,10 +18,10 @@
 
 var ASSET_LIST = [
     /* ---- Heroes 英雄 (key: char_<id>) ---- */
-    { key: 'char_vanhelsing', category: 'hero', label: '范海辛 Van Helsing', src: 'assets/heroes/vanhelsing.png' },
-    { key: 'char_carmilla', category: 'hero', label: '卡蜜拉 Carmilla', src: 'assets/heroes/carmilla.png' },
-    { key: 'char_bella', category: 'hero', label: '貝拉 Bella', src: 'assets/heroes/bella.png' },
-    { key: 'char_max', category: 'hero', label: '麥斯 Max', src: 'assets/heroes/max.png' },
+    { key: 'char_mage', category: 'hero', label: '魔法師 Mage', src: 'assets/heroes/mage.png' },
+    { key: 'char_sword', category: 'hero', label: '劍客 Swordsman', src: 'assets/heroes/sword.png' },
+    { key: 'char_assassin', category: 'hero', label: '刺客 Assassin', src: 'assets/heroes/assassin.png' },
+    { key: 'char_healer', category: 'hero', label: '藥師 Apothecary', src: 'assets/heroes/healer.png' },
 
     /* ---- Enemies 敵人 (key: enemy_<type>) ---- */
     { key: 'enemy_skeleton', category: 'enemy', label: '骷髏 Skeleton', src: 'assets/enemies/skeleton.png' },

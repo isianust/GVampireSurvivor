@@ -7,7 +7,7 @@ var WEAPON_DEFS = {
         name: '飛刀 Throwing Knife',
         desc: '向最近敵人投擲飛刀',
         baseCooldown: 0.8,
-        baseDamage: 8,
+        baseDamage: 13,
         baseCount: 1,
         speed: 350,
         range: 300,
@@ -18,7 +18,7 @@ var WEAPON_DEFS = {
         name: '火球 Fireball',
         desc: '發射火球，造成範圍傷害',
         baseCooldown: 1.5,
-        baseDamage: 15,
+        baseDamage: 22,
         baseCount: 1,
         speed: 250,
         range: 400,
@@ -29,7 +29,7 @@ var WEAPON_DEFS = {
         name: '聖水 Holy Water',
         desc: '在地上留下聖水區域',
         baseCooldown: 3.0,
-        baseDamage: 5,
+        baseDamage: 8,
         baseCount: 1,
         speed: 0,
         range: 0,
@@ -41,13 +41,39 @@ var WEAPON_DEFS = {
         name: '聖鞭 Holy Whip',
         desc: '揮動聖鞭攻擊前方敵人',
         baseCooldown: 1.2,
-        baseDamage: 12,
+        baseDamage: 18,
         baseCount: 1,
         speed: 0,
         range: 70,
         radius: 60,
         duration: 0.2,
         type: 'whip'
+    },
+    // ----- Ranged default weapons for the Swordsman / Apothecary classes.
+    // They reuse the knife / fireball firing mechanic via `base`. -----
+    swordqi: {
+        name: '劍氣 Sword Qi',
+        desc: '射出劍氣斬向最近敵人',
+        base: 'knife',
+        baseCooldown: 0.7,
+        baseDamage: 16,
+        baseCount: 1,
+        speed: 380,
+        range: 340,
+        radius: 6,
+        type: 'knife'
+    },
+    potion: {
+        name: '藥彈 Potion Bomb',
+        desc: '投出藥彈造成範圍毒傷',
+        base: 'fireball',
+        baseCooldown: 1.4,
+        baseDamage: 18,
+        baseCount: 1,
+        speed: 240,
+        range: 400,
+        radius: 9,
+        type: 'fireball'
     }
 };
 
@@ -95,7 +121,7 @@ function createWeaponState(weaponId) {
         def: def,
         cooldown: 0,
         level: 1,
-        getDamage: function () { return this.def.baseDamage + (this.level - 1) * 3; },
+        getDamage: function () { return this.def.baseDamage + (this.level - 1) * 4; },
         getCooldown: function () { return Math.max(0.2, this.def.baseCooldown - (this.level - 1) * 0.08); },
         getCount: function () { return this.def.baseCount + Math.floor((this.level - 1) / 3); }
     };

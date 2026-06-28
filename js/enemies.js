@@ -3,6 +3,7 @@
 var ENEMY_TYPES = {
     skeleton: {
         name: 'Skeleton',
+        cn: '骷髏',
         hp: 8,
         speed: 55,
         damage: 5,
@@ -13,6 +14,7 @@ var ENEMY_TYPES = {
     },
     zombie: {
         name: 'Zombie',
+        cn: '殭屍',
         hp: 20,
         speed: 30,
         damage: 8,
@@ -23,6 +25,7 @@ var ENEMY_TYPES = {
     },
     bat: {
         name: 'Bat',
+        cn: '蝙蝠',
         hp: 5,
         speed: 100,
         damage: 3,
@@ -33,6 +36,7 @@ var ENEMY_TYPES = {
     },
     ghost: {
         name: 'Ghost',
+        cn: '幽靈',
         hp: 12,
         speed: 50,
         damage: 6,
@@ -43,6 +47,7 @@ var ENEMY_TYPES = {
     },
     spider: {
         name: 'Spider',
+        cn: '蜘蛛',
         hp: 10,
         speed: 80,
         damage: 4,
@@ -53,6 +58,7 @@ var ENEMY_TYPES = {
     },
     werewolf: {
         name: 'Werewolf',
+        cn: '狼人',
         hp: 40,
         speed: 70,
         damage: 12,
@@ -63,6 +69,7 @@ var ENEMY_TYPES = {
     },
     warlock: {
         name: 'Warlock',
+        cn: '術士',
         hp: 25,
         speed: 40,
         damage: 10,
@@ -73,6 +80,7 @@ var ENEMY_TYPES = {
     },
     vampire: {
         name: 'Vampire',
+        cn: '吸血鬼',
         hp: 50,
         speed: 60,
         damage: 14,
@@ -83,6 +91,7 @@ var ENEMY_TYPES = {
     },
     drake: {
         name: 'Drake',
+        cn: '飛龍',
         hp: 70,
         speed: 55,
         damage: 18,
@@ -93,6 +102,7 @@ var ENEMY_TYPES = {
     },
     demon: {
         name: 'Demon Lord',
+        cn: '惡魔領主',
         hp: 200,
         speed: 45,
         damage: 25,
@@ -105,6 +115,7 @@ var ENEMY_TYPES = {
     // normal weighted spawner never picks them) -----
     lich: {
         name: 'Lich',
+        cn: '巫妖',
         hp: 350,
         speed: 35,
         damage: 22,
@@ -115,6 +126,7 @@ var ENEMY_TYPES = {
     },
     reaper: {
         name: 'Reaper',
+        cn: '死神',
         hp: 500,
         speed: 52,
         damage: 30,
@@ -145,6 +157,8 @@ function createEnemy(type, x, y, elapsed) {
     var ranged = RANGED_ENEMIES[type] || null;
     return {
         type: type,
+        name: def.name,
+        cn: def.cn || '',
         x: x,
         y: y,
         hp: Math.floor(def.hp * scale),

@@ -1,7 +1,7 @@
 /* ===== Player ===== */
 
 function createPlayer(character) {
-    var c = character || (typeof getCharacter === 'function' ? getCharacter('vanhelsing') : null);
+    var c = character || (typeof getCharacter === 'function' ? getCharacter('mage') : null);
     var mods = (c && c.mods) || {};
     var ult = (c && c.ult) || 'judgement';
     var player = {
@@ -24,19 +24,27 @@ function createPlayer(character) {
         magnetRange: 60,      // XP pickup range
         speedMult: 1.0,
         // Character identity
-        charId: (c && c.id) || 'vanhelsing',
+        charId: (c && c.id) || 'mage',
         color: (c && c.color) || '#3b5998',
         lifestealOnKill: mods.lifestealOnKill || 0,
-        // Active skills (cooldowns in seconds) + facing for dash
-        skillCd: { dash: 0, nova: 0, frost: 0 },
+        // Active skills (cooldowns in seconds) + facing for dash.
+        // `skills` is the J/K/L loadout for this character.
+        skills: (c && c.skills) || (typeof DEFAULT_SKILLS !== 'undefined' ? DEFAULT_SKILLS : ['dash', 'nova', 'frost']),
+        skillCd: {},
         facingX: 1,
         facingY: 0,
         dashTimer: 0,
-        // Ultimate / 必殺技 charge meter
+        // Ultimate / 必殺技 — now gated by a fixed cooldown (seconds)
         ultId: ult,
         ultCharge: 0,
-        ultMax: 100
+        ultMax: 100,
+        ultCd: 0
     };
+
+    // Initialise a cooldown slot for each equipped skill
+    for (var si = 0; si < player.skills.length; si++) {
+        player.skillCd[player.skills[si]] = 0;
+    }
 
     // Apply character stat modifiers
     player.maxHp += (mods.maxHp || 0);
