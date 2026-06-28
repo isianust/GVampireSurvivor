@@ -43,6 +43,7 @@ html, body {
 
 /* ===== Instruction Overlay ===== */
 #instruction-overlay,
+#charselect-overlay,
 #gameover-overlay,
 #levelup-overlay {
     position: fixed;
