@@ -49,6 +49,7 @@
         instructionOverlay.classList.add('hidden');
         hud.classList.remove('hidden');
         Input.showJoystick();
+        if (Input.clearKeys) Input.clearKeys();
         Game.init(selectedCharacter);
     }
 
@@ -62,6 +63,7 @@
     // ---- Restart Game -> keep same character ----
     restartBtn.addEventListener('click', function () {
         gameoverOverlay.classList.add('hidden');
+        if (Input.clearKeys) Input.clearKeys();
         Game.init(selectedCharacter);
     });
 

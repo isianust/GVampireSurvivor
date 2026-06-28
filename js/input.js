@@ -35,6 +35,20 @@ var Input = {
 
         // Prevent context menu on long press
         window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // Release all keys when the window/tab loses focus or is hidden.
+        // Otherwise a held movement key never receives its keyup and stays
+        // "pressed", so the player keeps drifting and can't change direction.
+        window.addEventListener('blur', function () { self.clearKeys(); });
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) self.clearKeys();
+        });
+    },
+
+    /** Forget every held key + queued press (used on focus loss / restart). */
+    clearKeys: function () {
+        this.keys = {};
+        this.justPressed = {};
     },
 
     /** Returns true once per physical key press (consumes the edge). */

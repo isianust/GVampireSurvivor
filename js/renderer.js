@@ -228,6 +228,20 @@ var Renderer = {
             ctx.fillRect(-barW / 2, barY, barW * (enemy.hp / enemy.maxHp), barH);
         }
 
+        // Name tag (中英文) above the enemy
+        if (enemy.cn || enemy.name) {
+            var label = (enemy.cn ? enemy.cn + ' ' : '') + (enemy.name || '');
+            if (enemy.bossLabel) label = '【' + enemy.bossLabel + '】' + label;
+            ctx.globalAlpha = 1;
+            ctx.font = 'bold ' + (enemy.isBoss ? 13 : 10) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = enemy.isBoss ? '#ffd24a' : '#ffffff';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 3;
+            ctx.fillText(label, 0, -r - 13);
+            ctx.shadowBlur = 0;
+        }
+
         ctx.restore();
     },
 

@@ -4,10 +4,10 @@ var INFINITE_PIERCING = 999;
 
 var WEAPON_DEFS = {
     knife: {
-        name: '飛刀 Throwing Knife',
-        desc: '向最近敵人投擲飛刀',
+        name: '奪命飛刀 Soul-Reaping Knife',
+        desc: '向最近敵人擲出奪命飛刀',
         baseCooldown: 0.8,
-        baseDamage: 8,
+        baseDamage: 13,
         baseCount: 1,
         speed: 350,
         range: 300,
@@ -15,10 +15,10 @@ var WEAPON_DEFS = {
         type: 'knife'
     },
     fireball: {
-        name: '火球 Fireball',
-        desc: '發射火球，造成範圍傷害',
+        name: '烈火真訣 Inferno Orb',
+        desc: '催動真火轟出，造成範圍灼傷',
         baseCooldown: 1.5,
-        baseDamage: 15,
+        baseDamage: 22,
         baseCount: 1,
         speed: 250,
         range: 400,
@@ -26,10 +26,10 @@ var WEAPON_DEFS = {
         type: 'fireball'
     },
     holywater: {
-        name: '聖水 Holy Water',
-        desc: '在地上留下聖水區域',
+        name: '淨世甘泉 Cleansing Spring',
+        desc: '潑灑甘泉，於地面化作傷敵領域',
         baseCooldown: 3.0,
-        baseDamage: 5,
+        baseDamage: 8,
         baseCount: 1,
         speed: 0,
         range: 0,
@@ -38,16 +38,42 @@ var WEAPON_DEFS = {
         type: 'holywater'
     },
     whip: {
-        name: '聖鞭 Holy Whip',
-        desc: '揮動聖鞭攻擊前方敵人',
+        name: '游龍鞭法 Dragon Whip',
+        desc: '揮出游龍鞭，橫掃身前群敵',
         baseCooldown: 1.2,
-        baseDamage: 12,
+        baseDamage: 18,
         baseCount: 1,
         speed: 0,
         range: 70,
         radius: 60,
         duration: 0.2,
         type: 'whip'
+    },
+    // ----- Ranged default weapons for the Swordsman / Apothecary classes.
+    // They reuse the knife / fireball firing mechanic via `base`. -----
+    swordqi: {
+        name: '凌厲劍氣 Keen Sword Qi',
+        desc: '遞出凌厲劍氣，斬向最近敵人',
+        base: 'knife',
+        baseCooldown: 0.7,
+        baseDamage: 16,
+        baseCount: 1,
+        speed: 380,
+        range: 340,
+        radius: 6,
+        type: 'knife'
+    },
+    potion: {
+        name: '霹靂藥彈 Thunderclap Bomb',
+        desc: '擲出霹靂藥彈，炸開範圍毒傷',
+        base: 'fireball',
+        baseCooldown: 1.4,
+        baseDamage: 18,
+        baseCount: 1,
+        speed: 240,
+        range: 400,
+        radius: 9,
+        type: 'fireball'
     }
 };
 
@@ -56,22 +82,22 @@ var WEAPON_DEFS = {
  * far stronger stats. `assetKey` lets ComfyUI pixel art skin it later. */
 var EVOLVED_DEFS = {
     stormblade: {
-        name: '🌪️ 刀刃風暴 Storm Blade', desc: '飛刀進化：高速三連穿刺',
+        name: '🌪️ 風雷刀陣 Storm Blade', desc: '飛刀進化：風雷三連、高速穿刺',
         base: 'knife', type: 'knife', assetKey: 'proj_stormblade',
         baseCooldown: 0.3, baseDamage: 22, baseCount: 3, speed: 420, range: 360, radius: 7
     },
     inferno: {
-        name: '🔥 煉獄火海 Inferno', desc: '火球進化：巨大爆裂火球',
+        name: '🔥 焚天煉獄 Inferno', desc: '真火進化：焚天巨焰、爆裂連環',
         base: 'fireball', type: 'fireball', assetKey: 'proj_inferno',
         baseCooldown: 0.8, baseDamage: 40, baseCount: 2, speed: 260, range: 460, radius: 14
     },
     deathspiral: {
-        name: '💀 死亡螺旋 Death Spiral', desc: '聖鞭進化：雙向大範圍橫掃',
+        name: '💀 奪魂旋風 Death Spiral', desc: '鞭法進化：雙向奪魂、大範圍橫掃',
         base: 'whip', type: 'whip', assetKey: 'proj_deathspiral',
         baseCooldown: 0.5, baseDamage: 30, baseCount: 2, speed: 0, range: 95, radius: 90, duration: 0.25
     },
     sanctuary: {
-        name: '✨ 聖域 Sanctuary', desc: '聖水進化：持久巨型聖光領域',
+        name: '✨ 護身金鐘 Sanctuary', desc: '甘泉進化：持久巨型護身金鐘領域',
         base: 'holywater', type: 'holywater', assetKey: 'proj_sanctuary',
         baseCooldown: 1.5, baseDamage: 14, baseCount: 1, speed: 0, range: 0, radius: 70, duration: 4.0
     }
@@ -95,7 +121,7 @@ function createWeaponState(weaponId) {
         def: def,
         cooldown: 0,
         level: 1,
-        getDamage: function () { return this.def.baseDamage + (this.level - 1) * 3; },
+        getDamage: function () { return this.def.baseDamage + (this.level - 1) * 4; },
         getCooldown: function () { return Math.max(0.2, this.def.baseCooldown - (this.level - 1) * 0.08); },
         getCount: function () { return this.def.baseCount + Math.floor((this.level - 1) / 3); }
     };
@@ -240,12 +266,23 @@ function checkProjectileHit(proj, enemy) {
 
 /* ===== Upgrade options generation ===== */
 
+/* ===== Stat upgrade pool 屬性升級表 =====
+ * 純數據表，加新招只要喺呢度加一行（唔使改 generateUpgradeOptions）：
+ *   stat   要加嘅玩家屬性欄位名（必須係 player 已支援嘅欄位）
+ *   value  每次升級加幾多
+ *   name / desc / icon 顯示用（武俠風命名） */
 var UPGRADE_POOL = [
-    { id: 'maxhp', name: '❤️ 生命上限 +20', desc: '增加最大生命值', apply: function (p) { p.maxHp += 20; p.hp += 20; } },
-    { id: 'armor', name: '🛡️ 護甲 +1', desc: '減少受到的傷害', apply: function (p) { p.armor += 1; } },
-    { id: 'speed', name: '👟 移動速度 +10%', desc: '移動更快', apply: function (p) { p.speedMult += 0.1; } },
-    { id: 'regen', name: '💚 生命回復 +0.5/s', desc: '持續回復生命', apply: function (p) { p.regen += 0.5; } },
-    { id: 'magnet', name: '🧲 磁鐵範圍 +30', desc: '更遠距離拾取經驗', apply: function (p) { p.magnetRange += 30; } }
+    { id: 'maxhp', stat: 'maxHp', value: 20, icon: '❤️', name: '渾元護體 生命上限 +20', desc: '渾厚內力護體，最大生命提升' },
+    { id: 'maxhp_big', stat: 'maxHp', value: 40, icon: '❤️‍🔥', name: '九陽神功 生命上限 +40', desc: '純陽內力滾滾，最大生命大幅提升' },
+    { id: 'armor', stat: 'armor', value: 1, icon: '🛡️', name: '鐵布衫 護甲 +1', desc: '橫練金鐘鐵布，減少受到的傷害' },
+    { id: 'armor_big', stat: 'armor', value: 2, icon: '🪨', name: '金鐘罩 護甲 +2', desc: '罡氣護身，大幅減少受到的傷害' },
+    { id: 'speed', stat: 'speedMult', value: 0.1, icon: '👟', name: '凌波微步 移速 +10%', desc: '身法如水，移動更快' },
+    { id: 'speed_big', stat: 'speedMult', value: 0.2, icon: '🌬️', name: '神行百變 移速 +20%', desc: '神行無蹤，移動大幅加快' },
+    { id: 'regen', stat: 'regen', value: 0.5, icon: '💚', name: '龜息養生 回復 +0.5/s', desc: '吐納養生，持續回復生命' },
+    { id: 'regen_big', stat: 'regen', value: 1.0, icon: '🌿', name: '長春不老功 回復 +1/s', desc: '生生不息，大幅持續回復生命' },
+    { id: 'magnet', stat: 'magnetRange', value: 30, icon: '🧲', name: '吸星大法 拾取 +30', desc: '隔空攝物，更遠距離拾取經驗' },
+    { id: 'magnet_big', stat: 'magnetRange', value: 60, icon: '🌀', name: '北冥神功 拾取 +60', desc: '吞吐如海，大幅擴大拾取範圍' },
+    { id: 'lifesteal', stat: 'lifestealOnKill', value: 1, icon: '🩸', name: '化血神刀 擊殺回血 +1', desc: '每擊殺一敵回復生命' }
 ];
 
 function generateUpgradeOptions(player, weapons) {
@@ -310,12 +347,18 @@ function generateUpgradeOptions(player, weapons) {
         }
     }
 
-    // Stat upgrades
+    // Stat upgrades — data-driven from UPGRADE_POOL
     for (var k = 0; k < UPGRADE_POOL.length; k++) {
         options.push({
-            name: UPGRADE_POOL[k].name,
+            name: (UPGRADE_POOL[k].icon ? UPGRADE_POOL[k].icon + ' ' : '') + UPGRADE_POOL[k].name,
             desc: UPGRADE_POOL[k].desc,
-            apply: (function (up) { return function (p) { up.apply(p); }; })(UPGRADE_POOL[k]),
+            apply: (function (up) {
+                return function (p) {
+                    p[up.stat] = (p[up.stat] || 0) + up.value;
+                    // 生命上限提升時同步補滿等量當前生命
+                    if (up.stat === 'maxHp') p.hp += up.value;
+                };
+            })(UPGRADE_POOL[k]),
             isWeapon: false
         });
     }

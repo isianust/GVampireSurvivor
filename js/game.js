@@ -11,6 +11,17 @@ var BOSS_SCHEDULE = [
 var BOSS_INTERVAL = 150;       // seconds between bosses after the schedule
 var BOSS_ROTATION = ['demon', 'lich', 'reaper'];
 
+/* Kill-count boss tiers: a boss appears once the player reaches each kill
+ * threshold (independent of the time schedule — both systems run together). */
+var BOSS_KILL_SCHEDULE = [
+    { kills: 50, type: 'demon', label: '小BOSS', hpMult: 1.0 },
+    { kills: 100, type: 'lich', label: '中BOSS', hpMult: 1.6 },
+    { kills: 200, type: 'reaper', label: '大BOSS', hpMult: 2.4 },
+    { kills: 500, type: 'demon', label: '最大BOSS', hpMult: 3.6 }
+];
+/* After the fixed kill tiers, keep spawning escalating kill-based bosses. */
+var BOSS_KILL_INTERVAL = 300;  // every N extra kills past the last tier
+
 var Game = {
     state: 'menu',  // menu | playing | paused | levelup | gameover
     player: null,
@@ -27,15 +38,17 @@ var Game = {
     kills: 0,
     spawnTimer: 0,
     spawnInterval: 1.5,
-    maxEnemies: 80,
+    maxEnemies: 100,
     lastTime: 0,
     animFrame: 0,
     lastDir: { x: 1, y: 0 },
     nextBossIndex: 0,
     nextBossTime: 0,
+    nextKillBossIndex: 0,
+    nextKillBossThreshold: 0,
 
     init: function (character) {
-        this.character = character || (typeof getCharacter === 'function' ? getCharacter('vanhelsing') : null);
+        this.character = character || (typeof getCharacter === 'function' ? getCharacter('mage') : null);
         this.player = createPlayer(this.character);
         this.enemies = [];
         this.projectiles = [];
@@ -50,11 +63,16 @@ var Game = {
         this.kills = 0;
         this.spawnTimer = 0;
         this.spawnInterval = 1.5;
+        this.maxEnemies = 100;
         this.lastDir = { x: 1, y: 0 };
         this.nextBossIndex = 0;
         this.nextBossTime = BOSS_INTERVAL;
+        this.nextKillBossIndex = 0;
+        this.nextKillBossThreshold = 0;
         this.state = 'playing';
         this.lastTime = performance.now();
+        // Opening burst so the field isn't empty at the start
+        for (var i = 0; i < 16; i++) this.spawnEnemy();
     },
 
     update: function (inputDir) {
@@ -81,17 +99,24 @@ var Game = {
         this.camera.x = lerp(this.camera.x, this.player.x, 0.1);
         this.camera.y = lerp(this.camera.y, this.player.y, 0.1);
 
-        // Spawn enemies — difficulty (rate + cap) ramps up for longer runs
+        // Spawn enemies — random interval (not fixed) that tightens over time,
+        // with a higher cap for longer runs.
         this.spawnTimer -= dt;
-        this.spawnInterval = Math.max(0.25, 1.5 - this.elapsed * 0.005);
-        this.maxEnemies = Math.min(160, 80 + Math.floor(this.elapsed / 30) * 8);
+        this.maxEnemies = Math.min(200, 100 + Math.floor(this.elapsed / 30) * 12);
         if (this.spawnTimer <= 0 && this.enemies.length < this.maxEnemies) {
-            this.spawnTimer = this.spawnInterval;
-            this.spawnEnemy();
+            var minI = Math.max(0.15, 0.6 - this.elapsed * 0.004);
+            var maxI = Math.max(0.4, 1.1 - this.elapsed * 0.006);
+            this.spawnTimer = randFloat(minI, maxI);
+            // Spawn a small random burst so density feels lively
+            var burst = 1 + randInt(0, 3);
+            for (var sb = 0; sb < burst && this.enemies.length < this.maxEnemies; sb++) {
+                this.spawnEnemy();
+            }
         }
 
-        // Boss schedule (escalating, endless)
+        // Boss schedule (escalating, endless) — by time AND by kill count
         this.updateBossSchedule();
+        this.updateKillBossSchedule();
 
         // Update enemies
         this.updateEnemies(dt);
@@ -133,23 +158,26 @@ var Game = {
     /** Read one-shot skill/ultimate presses and activate them. */
     handleSkillInput: function () {
         if (typeof Input === 'undefined' || !Input.consumePress) return;
-        if (Input.consumePress('j')) Skills.activate(this, 'dash');
-        if (Input.consumePress('k')) Skills.activate(this, 'nova');
-        if (Input.consumePress('l')) Skills.activate(this, 'frost');
+        var sk = this.player.skills || DEFAULT_SKILLS;
+        if (Input.consumePress('j') && sk[0]) Skills.activate(this, sk[0]);
+        if (Input.consumePress('k') && sk[1]) Skills.activate(this, sk[1]);
+        if (Input.consumePress('l') && sk[2]) Skills.activate(this, sk[2]);
         if (Input.consumePress('u') || Input.consumePress(' ')) Skills.activateUlt(this);
     },
 
-    /** Trigger Dash in the current movement/facing direction. */
-    dashPlayer: function () {
+    /** Trigger Dash in the current movement/facing direction.
+     * `dist` 位移距離、`inv` 無敵秒數 由技能表傳入（缺省值維持原本行為）。 */
+    dashPlayer: function (dist, inv) {
         var p = this.player;
         var dx = this.lastDir.x, dy = this.lastDir.y;
         var m = Math.sqrt(dx * dx + dy * dy);
         if (m < 0.01) { dx = p.facingX; dy = p.facingY; m = Math.sqrt(dx * dx + dy * dy) || 1; }
         dx /= m; dy /= m;
-        p.x += dx * 110;
-        p.y += dy * 110;
+        var d = dist || 110;
+        p.x += dx * d;
+        p.y += dy * d;
         p.dashTimer = 0.18;
-        p.invTimer = Math.max(p.invTimer, 0.4);
+        p.invTimer = Math.max(p.invTimer, inv || 0.4);
         this.addParticles(p.x, p.y, '#cfe8ff', 14);
     },
 
@@ -201,7 +229,31 @@ var Game = {
         }
     },
 
-    spawnBoss: function (type, hpMult) {
+    /** Spawn bosses when the player reaches kill-count tiers (50/100/200/500…). */
+    updateKillBossSchedule: function () {
+        // Fixed kill tiers
+        if (this.nextKillBossIndex < BOSS_KILL_SCHEDULE.length) {
+            var tier = BOSS_KILL_SCHEDULE[this.nextKillBossIndex];
+            if (this.kills >= tier.kills) {
+                this.spawnBoss(tier.type, tier.hpMult, tier.label);
+                this.nextKillBossIndex++;
+                if (this.nextKillBossIndex >= BOSS_KILL_SCHEDULE.length) {
+                    var last = BOSS_KILL_SCHEDULE[BOSS_KILL_SCHEDULE.length - 1];
+                    this.nextKillBossThreshold = last.kills + BOSS_KILL_INTERVAL;
+                }
+            }
+            return;
+        }
+        // Endless kill-based bosses past the last tier
+        if (this.kills >= this.nextKillBossThreshold) {
+            var ridx = Math.floor(this.kills / BOSS_KILL_INTERVAL) % BOSS_ROTATION.length;
+            var rmult = 3.6 + (this.kills - 500) / BOSS_KILL_INTERVAL * 0.5;
+            this.spawnBoss(BOSS_ROTATION[ridx], rmult, '最大BOSS');
+            this.nextKillBossThreshold += BOSS_KILL_INTERVAL;
+        }
+    },
+
+    spawnBoss: function (type, hpMult, label) {
         type = type || 'demon';
         hpMult = hpMult || 1;
         var pos = spawnOutsideView(this.camera, Renderer.canvas, 200);
@@ -210,8 +262,52 @@ var Game = {
         boss.maxHp *= 3 * hpMult;
         boss.radius *= 1.4;
         boss.isBoss = true;
+        if (label) boss.bossLabel = label;
+        // Attach data-driven boss ability (enrage / summon), if any — guarded so
+        // bosses with no entry behave exactly as before.
+        var ability = (typeof BOSS_ABILITIES !== 'undefined') ? BOSS_ABILITIES[type] : null;
+        if (ability) {
+            boss.ability = ability;
+            boss.enraged = false;
+            boss.summonTimer = (ability.summon && ability.summon.interval) || 0;
+        }
         this.enemies.push(boss);
-        this.addDamageNumber(this.player.x, this.player.y - 60, '⚠ BOSS 出現!', '#ff4444', 24);
+        var msg = label ? ('⚠ ' + label + ' 出現!') : '⚠ BOSS 出現!';
+        this.addDamageNumber(this.player.x, this.player.y - 60, msg, '#ff4444', 24);
+    },
+
+    /** Drive a boss's data-driven ability each frame (enrage + summon). */
+    updateBossAbility: function (e, dt) {
+        var ab = e.ability;
+        // Enrage: once HP drops below threshold, buff speed/damage a single time.
+        if (ab.enrage && !e.enraged && e.hp <= e.maxHp * ab.enrage.hpPct) {
+            e.enraged = true;
+            e.speed *= (ab.enrage.speedMult || 1);
+            e.damage = Math.round(e.damage * (ab.enrage.damageMult || 1));
+            this.addParticles(e.x, e.y, '#ff3344', 30);
+            this.addDamageNumber(e.x, e.y - e.radius - 10, '暴怒!', '#ff5555', 20);
+        }
+        // Summon: periodically spawn minions, capped by `max` total enemies.
+        if (ab.summon) {
+            e.summonTimer -= dt;
+            if (e.summonTimer <= 0) {
+                e.summonTimer = ab.summon.interval || 5;
+                if (this.enemies.length < (ab.summon.max || 24)) {
+                    var n = ab.summon.count || 1;
+                    for (var s = 0; s < n; s++) {
+                        var ang = Math.random() * Math.PI * 2;
+                        var minion = createEnemy(
+                            ab.summon.type,
+                            e.x + Math.cos(ang) * (e.radius + 20),
+                            e.y + Math.sin(ang) * (e.radius + 20),
+                            this.elapsed
+                        );
+                        this.enemies.push(minion);
+                    }
+                    this.addParticles(e.x, e.y, '#aa66ff', 18);
+                }
+            }
+        }
     },
 
     /** Apply damage to enemy at index; centralizes kill → gem/XP/charge/lifesteal. */
@@ -283,6 +379,11 @@ var Game = {
                     this.fireEnemyProjectile(e);
                     e.rangeTimer = e.ranged.cooldown;
                 }
+            }
+
+            // Boss abilities (data-driven, see BOSS_ABILITIES) — additive & guarded
+            if (e.isBoss && e.ability) {
+                this.updateBossAbility(e, dt);
             }
 
             // Collision with player
@@ -532,12 +633,13 @@ var Game = {
         timeDisp.textContent = formatTime(this.elapsed);
         killDisp.textContent = 'Kills: ' + this.kills;
 
-        // Ultimate charge bar
+        // Ultimate cooldown bar (fills up as the 60s cooldown elapses)
         var ultBar = document.getElementById('ult-bar');
         var ultContainer = document.getElementById('ult-bar-container');
-        if (ultBar) ultBar.style.width = clamp(p.ultCharge / p.ultMax * 100, 0, 100) + '%';
+        var ultPct = ULT_COOLDOWN > 0 ? (ULT_COOLDOWN - (p.ultCd || 0)) / ULT_COOLDOWN : 1;
+        if (ultBar) ultBar.style.width = clamp(ultPct * 100, 0, 100) + '%';
         if (ultContainer) {
-            if (p.ultCharge >= p.ultMax) ultContainer.classList.add('ult-ready');
+            if (Skills.ultReady(p)) ultContainer.classList.add('ult-ready');
             else ultContainer.classList.remove('ult-ready');
         }
 
@@ -550,14 +652,18 @@ var Game = {
         var bar = document.getElementById('skill-bar');
         if (!bar) return;
         var p = this.player;
-        // Build once
-        if (bar.children.length !== SKILL_ORDER.length) {
+        var order = (p && p.skills) || DEFAULT_SKILLS;
+        // Build once (rebuild if the loadout length changes, e.g. new character)
+        if (bar.children.length !== order.length || bar.getAttribute('data-loadout') !== order.join(',')) {
             bar.innerHTML = '';
-            for (var i = 0; i < SKILL_ORDER.length; i++) {
-                var def = SKILL_DEFS[SKILL_ORDER[i]];
+            bar.setAttribute('data-loadout', order.join(','));
+            for (var i = 0; i < order.length; i++) {
+                var def = SKILL_DEFS[order[i]];
+                if (!def) continue;
                 var cell = document.createElement('div');
                 cell.className = 'skill-cell';
                 cell.setAttribute('data-skill', def.id);
+                cell.setAttribute('title', def.name);
                 cell.innerHTML =
                     '<span class="skill-key">' + def.key.toUpperCase() + '</span>' +
                     '<span class="skill-icon">' + def.icon + '</span>' +
@@ -569,8 +675,10 @@ var Game = {
         for (var j = 0; j < bar.children.length; j++) {
             var cell2 = bar.children[j];
             var id = cell2.getAttribute('data-skill');
+            var sdef = SKILL_DEFS[id];
+            if (!sdef) continue;
             var cd = (p.skillCd && p.skillCd[id]) || 0;
-            var maxCd = SKILL_DEFS[id].cooldown;
+            var maxCd = sdef.cooldown;
             var cdEl = cell2.querySelector('.skill-cd');
             if (cd > 0) {
                 cell2.classList.add('on-cooldown');

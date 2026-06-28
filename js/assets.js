@@ -18,36 +18,36 @@
 
 var ASSET_LIST = [
     /* ---- Heroes 英雄 (key: char_<id>) ---- */
-    { key: 'char_vanhelsing', category: 'hero', label: '范海辛 Van Helsing', src: 'assets/heroes/vanhelsing.png' },
-    { key: 'char_carmilla', category: 'hero', label: '卡蜜拉 Carmilla', src: 'assets/heroes/carmilla.png' },
-    { key: 'char_bella', category: 'hero', label: '貝拉 Bella', src: 'assets/heroes/bella.png' },
-    { key: 'char_max', category: 'hero', label: '麥斯 Max', src: 'assets/heroes/max.png' },
+    { key: 'char_mage', category: 'hero', label: '玄陰真人 Mage', src: 'assets/heroes/mage.png' },
+    { key: 'char_sword', category: 'hero', label: '神劍傲洲 Swordsman', src: 'assets/heroes/sword.png' },
+    { key: 'char_assassin', category: 'hero', label: '夜無痕 Assassin', src: 'assets/heroes/assassin.png' },
+    { key: 'char_healer', category: 'hero', label: '百草藥師 Apothecary', src: 'assets/heroes/healer.png' },
 
     /* ---- Enemies 敵人 (key: enemy_<type>) ---- */
-    { key: 'enemy_skeleton', category: 'enemy', label: '骷髏 Skeleton', src: 'assets/enemies/skeleton.png' },
-    { key: 'enemy_zombie', category: 'enemy', label: '殭屍 Zombie', src: 'assets/enemies/zombie.png' },
-    { key: 'enemy_bat', category: 'enemy', label: '蝙蝠 Bat', src: 'assets/enemies/bat.png' },
-    { key: 'enemy_ghost', category: 'enemy', label: '幽靈 Ghost', src: 'assets/enemies/ghost.png' },
-    { key: 'enemy_spider', category: 'enemy', label: '蜘蛛 Spider', src: 'assets/enemies/spider.png' },
-    { key: 'enemy_werewolf', category: 'enemy', label: '狼人 Werewolf', src: 'assets/enemies/werewolf.png' },
-    { key: 'enemy_warlock', category: 'enemy', label: '巫師 Warlock', src: 'assets/enemies/warlock.png' },
-    { key: 'enemy_vampire', category: 'enemy', label: '吸血鬼 Vampire', src: 'assets/enemies/vampire.png' },
-    { key: 'enemy_drake', category: 'enemy', label: '小龍 Drake', src: 'assets/enemies/drake.png' },
-    { key: 'enemy_demon', category: 'enemy', label: '魔王 Demon Lord', src: 'assets/enemies/demon.png' },
+    { key: 'enemy_skeleton', category: 'enemy', label: '枯骨 Skeleton', src: 'assets/enemies/skeleton.png' },
+    { key: 'enemy_zombie', category: 'enemy', label: '行屍 Zombie', src: 'assets/enemies/zombie.png' },
+    { key: 'enemy_bat', category: 'enemy', label: '血蝠 Bat', src: 'assets/enemies/bat.png' },
+    { key: 'enemy_ghost', category: 'enemy', label: '厲鬼 Ghost', src: 'assets/enemies/ghost.png' },
+    { key: 'enemy_spider', category: 'enemy', label: '毒蛛 Spider', src: 'assets/enemies/spider.png' },
+    { key: 'enemy_werewolf', category: 'enemy', label: '狼妖 Werewolf', src: 'assets/enemies/werewolf.png' },
+    { key: 'enemy_warlock', category: 'enemy', label: '邪術士 Warlock', src: 'assets/enemies/warlock.png' },
+    { key: 'enemy_vampire', category: 'enemy', label: '血魔 Vampire', src: 'assets/enemies/vampire.png' },
+    { key: 'enemy_drake', category: 'enemy', label: '蛟龍 Drake', src: 'assets/enemies/drake.png' },
+    { key: 'enemy_demon', category: 'enemy', label: '魔教護法 Demon Lord', src: 'assets/enemies/demon.png' },
 
     /* ---- Bosses 頭目 (key: enemy_<type>) ---- */
-    { key: 'enemy_lich', category: 'boss', label: '巫妖 Lich', src: 'assets/bosses/lich.png' },
-    { key: 'enemy_reaper', category: 'boss', label: '死神 Reaper', src: 'assets/bosses/reaper.png' },
+    { key: 'enemy_lich', category: 'boss', label: '屍王 Lich', src: 'assets/bosses/lich.png' },
+    { key: 'enemy_reaper', category: 'boss', label: '索命無常 Reaper', src: 'assets/bosses/reaper.png' },
 
     /* ---- Weapons / projectiles 武器子彈 (key: proj_<type>) ---- */
-    { key: 'proj_knife', category: 'weapon', label: '飛刀 Knife', src: 'assets/weapons/knife.png' },
-    { key: 'proj_fireball', category: 'weapon', label: '火球 Fireball', src: 'assets/weapons/fireball.png' },
-    { key: 'proj_holywater', category: 'weapon', label: '聖水 Holy Water', src: 'assets/weapons/holywater.png' },
-    { key: 'proj_whip', category: 'weapon', label: '聖鞭 Whip', src: 'assets/weapons/whip.png' },
-    { key: 'proj_stormblade', category: 'weapon', label: '刀刃風暴 Storm Blade', src: 'assets/weapons/stormblade.png' },
-    { key: 'proj_inferno', category: 'weapon', label: '煉獄火海 Inferno', src: 'assets/weapons/inferno.png' },
-    { key: 'proj_deathspiral', category: 'weapon', label: '死亡螺旋 Death Spiral', src: 'assets/weapons/deathspiral.png' },
-    { key: 'proj_sanctuary', category: 'weapon', label: '聖域 Sanctuary', src: 'assets/weapons/sanctuary.png' },
+    { key: 'proj_knife', category: 'weapon', label: '奪命飛刀 Knife', src: 'assets/weapons/knife.png' },
+    { key: 'proj_fireball', category: 'weapon', label: '烈火真訣 Fireball', src: 'assets/weapons/fireball.png' },
+    { key: 'proj_holywater', category: 'weapon', label: '淨世甘泉 Holy Water', src: 'assets/weapons/holywater.png' },
+    { key: 'proj_whip', category: 'weapon', label: '游龍鞭 Whip', src: 'assets/weapons/whip.png' },
+    { key: 'proj_stormblade', category: 'weapon', label: '風雷刀陣 Storm Blade', src: 'assets/weapons/stormblade.png' },
+    { key: 'proj_inferno', category: 'weapon', label: '焚天煉獄 Inferno', src: 'assets/weapons/inferno.png' },
+    { key: 'proj_deathspiral', category: 'weapon', label: '奪魂旋風 Death Spiral', src: 'assets/weapons/deathspiral.png' },
+    { key: 'proj_sanctuary', category: 'weapon', label: '護身金鐘 Sanctuary', src: 'assets/weapons/sanctuary.png' },
 
     /* ---- Pickups 拾取物 ---- */
     { key: 'gem', category: 'pickup', label: '經驗寶石 XP Gem', src: 'assets/pickups/gem.png' }

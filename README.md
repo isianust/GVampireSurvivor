@@ -33,20 +33,21 @@ npm run dev
 
 ## ✨ Features
 
-### 🦸 Heroes (named characters)
-Choose 1 of 4 heroes, each with a different starting weapon, stats, and a
-signature ultimate:
-- **范海辛 Van Helsing** — balanced; ult *聖光審判* damages the whole screen
-- **卡蜜拉 Carmilla** — lifesteal on kill; ult *血月* heals while damaging
-- **貝拉 Bella** — fast glass cannon; ult *隕石風暴*
-- **麥斯 Max** — tanky; ult *聖域堡壘* knockback + shield
+### 🦸 Heroes (named classes)
+Choose 1 of 4 classes — **every class starts with a ranged default attack** —
+each with its own stats, three active skills, and a signature ultimate
+(ultimate is on a **60s cooldown**):
+- **玄陰真人 Mage** — glass cannon; ranged 烈火真訣 Inferno Orb; ult *九天隕星訣 Meteor Storm*
+- **神劍傲洲 Swordsman** — balanced; ranged 凌厲劍氣 Sword Qi; ult *天外飛仙 Sky Blade*
+- **夜無痕 Assassin** — fast; ranged 奪命飛刀 Throwing Knife; ult *奪命無常 Shadow Kill*
+- **百草藥師 Apothecary** — high sustain; ranged 霹靂藥彈 Potion Bomb; ult *普渡慈航 Sweet Dew*
 
 ### ⚡ Active skills + 💥 Ultimate (you're in control)
-Movement is **WASD / arrows**; abilities are triggered by you:
-- **J — Dash 衝刺** (quick dash + brief i-frames)
-- **K — Nova 震波** (radial burst damage)
-- **L — Frost 冰封** (slow nearby enemies)
-- **U — Ultimate 必殺技** (charges as you kill; screen-clearing blast)
+Movement is **WASD / arrows**; abilities are triggered by you. Each class has its
+own three skills shown on the J / K / L slots (the skill's name flashes above the
+hero when cast):
+- **J / K / L** — the class's three active skills (dash, area burst, slow/utility)
+- **U — Ultimate 必殺技** (screen-clearing blast, **60-second cooldown**)
 
 ### 🔀 Weapon evolution (2 → 1)
 Max out a base weapon and own its partner to **fuse them into one** stronger
