@@ -472,3 +472,211 @@ html, body {
         height: 32px;
     }
 }
+
+/* =====================================================================
+ * V3 additions: pixel-art canvas, character select, skills & ultimate
+ * ===================================================================== */
+
+/* Pixel-art friendly rendering (sprites drawn via Assets) */
+#gameCanvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* ===== Character Select ===== */
+.charselect-hint {
+    text-align: center;
+    color: #b9a;
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+}
+
+#character-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.character-card {
+    text-align: left;
+    background: rgba(30, 16, 40, 0.85);
+    border: 2px solid #663;
+    border-radius: 12px;
+    padding: 14px;
+    color: #eee;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.character-card:hover,
+.character-card:focus {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 0 18px rgba(180, 120, 255, 0.5);
+    outline: none;
+}
+
+.char-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin-bottom: 8px;
+    box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.4);
+}
+
+.char-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    margin-bottom: 2px;
+}
+
+.char-title {
+    font-size: 0.8rem;
+    color: #d8b4ff;
+    margin-bottom: 6px;
+}
+
+.char-desc {
+    font-size: 0.82rem;
+    color: #cfcfd6;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+
+.char-meta {
+    font-size: 0.8rem;
+    color: #ffd27f;
+    line-height: 1.4;
+}
+
+/* ===== HUD bottom: ultimate + skill bar ===== */
+#hud-bottom {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 50;
+}
+
+#ult-bar-container {
+    position: relative;
+    width: 240px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid #553;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#ult-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff7b00, #ffd000);
+    transition: width 0.15s linear;
+}
+
+#ult-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px #000;
+}
+
+#ult-bar-container.ult-ready {
+    box-shadow: 0 0 14px 3px rgba(255, 200, 0, 0.85);
+    animation: ultPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ultPulse {
+    0%, 100% { box-shadow: 0 0 10px 2px rgba(255, 200, 0, 0.7); }
+    50% { box-shadow: 0 0 18px 5px rgba(255, 230, 80, 1); }
+}
+
+#skill-bar {
+    display: flex;
+    gap: 10px;
+}
+
+.skill-cell {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 2px solid #6a5acd;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skill-cell .skill-icon {
+    font-size: 1.3rem;
+}
+
+.skill-cell .skill-key {
+    position: absolute;
+    top: 1px;
+    left: 4px;
+    font-size: 0.62rem;
+    font-weight: bold;
+    color: #cdf;
+}
+
+.skill-cell .skill-cd {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: rgba(0, 0, 0, 0.6);
+    transition: height 0.1s linear;
+}
+
+.skill-cell.on-cooldown {
+    border-color: #444;
+    filter: grayscale(0.6);
+}
+
+/* ===== Mobile skill buttons ===== */
+#mobile-skills {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 64px);
+    gap: 12px;
+    z-index: 60;
+}
+
+.mobile-skill-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid #6a5acd;
+    background: rgba(40, 20, 60, 0.7);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.mobile-ult-btn {
+    border-color: #ffd000;
+    background: rgba(80, 50, 0, 0.7);
+}
+
+#mobile-skills.hidden {
+    display: none;
+}

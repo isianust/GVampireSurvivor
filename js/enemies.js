@@ -100,7 +100,38 @@ var ENEMY_TYPES = {
         xp: 30,
         color: '#4a0000',
         minTime: 180
+    },
+    // ----- Bosses (spawned only by the boss schedule; minTime huge so the
+    // normal weighted spawner never picks them) -----
+    lich: {
+        name: 'Lich',
+        hp: 350,
+        speed: 35,
+        damage: 22,
+        radius: 24,
+        xp: 40,
+        color: '#3aa0a0',
+        minTime: 999999
+    },
+    reaper: {
+        name: 'Reaper',
+        hp: 500,
+        speed: 52,
+        damage: 30,
+        radius: 28,
+        xp: 60,
+        color: '#2a2a3a',
+        minTime: 999999
     }
+};
+
+/* Ranged enemies fire projectiles at the player for combat variety.
+ * Stored separately so existing ENEMY_TYPES data stays untouched. */
+var RANGED_ENEMIES = {
+    warlock: { projColor: '#b066ff', projSpeed: 170, cooldown: 2.2, range: 440, projRadius: 6 },
+    drake: { projColor: '#ff7733', projSpeed: 200, cooldown: 2.6, range: 480, projRadius: 7 },
+    lich: { projColor: '#66ffcc', projSpeed: 190, cooldown: 1.6, range: 560, projRadius: 8 },
+    reaper: { projColor: '#cc66ff', projSpeed: 230, cooldown: 1.3, range: 600, projRadius: 9 }
 };
 
 var HP_SCALE_INTERVAL = 60;       // scale HP every N seconds
@@ -111,6 +142,7 @@ function createEnemy(type, x, y, elapsed) {
     var def = ENEMY_TYPES[type];
     // Scale HP with time
     var scale = 1 + Math.floor(elapsed / HP_SCALE_INTERVAL) * HP_SCALE_MULTIPLIER;
+    var ranged = RANGED_ENEMIES[type] || null;
     return {
         type: type,
         x: x,
@@ -123,7 +155,12 @@ function createEnemy(type, x, y, elapsed) {
         xp: def.xp,
         color: def.color,
         hitTimer: 0,
-        attackCooldown: 0
+        attackCooldown: 0,
+        slowTimer: 0,
+        // Ranged behaviour (null for melee enemies)
+        ranged: ranged,
+        rangeTimer: ranged ? randFloat(0.5, ranged.cooldown) : 0,
+        isBoss: false
     };
 }
 

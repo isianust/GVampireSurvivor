@@ -2,6 +2,7 @@
 
 var Input = {
     keys: {},
+    justPressed: {},
     dir: { x: 0, y: 0 },
     joystickActive: false,
     joystickStart: { x: 0, y: 0 },
@@ -15,7 +16,10 @@ var Input = {
         // Keyboard
         var self = this;
         window.addEventListener('keydown', function (e) {
-            self.keys[e.key.toLowerCase()] = true;
+            var k = e.key.toLowerCase();
+            // Edge: register a one-shot press only on the up->down transition
+            if (!self.keys[k]) self.justPressed[k] = true;
+            self.keys[k] = true;
             self.keys[e.code] = true;
         });
         window.addEventListener('keyup', function (e) {
@@ -23,13 +27,47 @@ var Input = {
             self.keys[e.code] = false;
         });
 
-        // Touch joystick
+        // Touch joystick + mobile skill buttons
         if (this.isMobile) {
             this.setupJoystick();
+            this.setupMobileSkills();
         }
 
         // Prevent context menu on long press
         window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    },
+
+    /** Returns true once per physical key press (consumes the edge). */
+    consumePress: function (key) {
+        key = key.toLowerCase();
+        if (this.justPressed[key]) {
+            this.justPressed[key] = false;
+            return true;
+        }
+        return false;
+    },
+
+    /** Clear all one-shot presses (call at end of each frame). */
+    clearPresses: function () {
+        this.justPressed = {};
+    },
+
+    /** Wire on-screen skill buttons (mobile) to the same press queue. */
+    setupMobileSkills: function () {
+        var self = this;
+        var keyForSkill = { dash: 'j', nova: 'k', frost: 'l', ult: 'u' };
+        var btns = document.querySelectorAll('.mobile-skill-btn');
+        for (var i = 0; i < btns.length; i++) {
+            (function (btn) {
+                var skill = btn.getAttribute('data-skill');
+                var press = function (e) {
+                    e.preventDefault();
+                    self.justPressed[keyForSkill[skill]] = true;
+                };
+                btn.addEventListener('touchstart', press, { passive: false });
+                btn.addEventListener('mousedown', press);
+            })(btns[i]);
+        }
     },
 
     setupJoystick: function () {
@@ -128,10 +166,14 @@ var Input = {
     showJoystick: function () {
         if (this.isMobile) {
             document.getElementById('joystick-area').classList.remove('hidden');
+            var ms = document.getElementById('mobile-skills');
+            if (ms) ms.classList.remove('hidden');
         }
     },
 
     hideJoystick: function () {
         document.getElementById('joystick-area').classList.add('hidden');
+        var ms = document.getElementById('mobile-skills');
+        if (ms) ms.classList.add('hidden');
     }
 };

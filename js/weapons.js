@@ -51,8 +51,45 @@ var WEAPON_DEFS = {
     }
 };
 
+/* ===== Weapon Evolution 武器進化 — fuse two weapons into one =====
+ * Each evolved weapon reuses a base mechanic (`base`) for firing, but with
+ * far stronger stats. `assetKey` lets ComfyUI pixel art skin it later. */
+var EVOLVED_DEFS = {
+    stormblade: {
+        name: '🌪️ 刀刃風暴 Storm Blade', desc: '飛刀進化：高速三連穿刺',
+        base: 'knife', type: 'knife', assetKey: 'proj_stormblade',
+        baseCooldown: 0.3, baseDamage: 22, baseCount: 3, speed: 420, range: 360, radius: 7
+    },
+    inferno: {
+        name: '🔥 煉獄火海 Inferno', desc: '火球進化：巨大爆裂火球',
+        base: 'fireball', type: 'fireball', assetKey: 'proj_inferno',
+        baseCooldown: 0.8, baseDamage: 40, baseCount: 2, speed: 260, range: 460, radius: 14
+    },
+    deathspiral: {
+        name: '💀 死亡螺旋 Death Spiral', desc: '聖鞭進化：雙向大範圍橫掃',
+        base: 'whip', type: 'whip', assetKey: 'proj_deathspiral',
+        baseCooldown: 0.5, baseDamage: 30, baseCount: 2, speed: 0, range: 95, radius: 90, duration: 0.25
+    },
+    sanctuary: {
+        name: '✨ 聖域 Sanctuary', desc: '聖水進化：持久巨型聖光領域',
+        base: 'holywater', type: 'holywater', assetKey: 'proj_sanctuary',
+        baseCooldown: 1.5, baseDamage: 14, baseCount: 1, speed: 0, range: 0, radius: 70, duration: 4.0
+    }
+};
+
+/* Evolution rules: own `a` at max level (8) AND own `b` (any level)
+ * → fuse both into `result`, freeing weapon slots. */
+var EVOLUTIONS = [
+    { result: 'stormblade', a: 'knife', b: 'fireball' },
+    { result: 'inferno', a: 'fireball', b: 'holywater' },
+    { result: 'deathspiral', a: 'whip', b: 'knife' },
+    { result: 'sanctuary', a: 'holywater', b: 'whip' }
+];
+
+var MAX_WEAPON_LEVEL = 8;
+
 function createWeaponState(weaponId) {
-    var def = WEAPON_DEFS[weaponId];
+    var def = WEAPON_DEFS[weaponId] || EVOLVED_DEFS[weaponId];
     return {
         id: weaponId,
         def: def,
@@ -75,9 +112,11 @@ function fireWeapons(weapons, player, enemies, dt) {
 
         var count = w.getCount();
         var dmg = w.getDamage();
+        var mech = w.def.base || w.id;       // evolved weapons reuse a base mechanic
+        var assetKey = w.def.assetKey;       // optional pixel-art skin override
 
         for (var c = 0; c < count; c++) {
-            if (w.id === 'knife' || w.id === 'fireball') {
+            if (mech === 'knife' || mech === 'fireball') {
                 // Find nearest enemy
                 var nearest = findNearestEnemy(player, enemies);
                 if (!nearest) continue;
@@ -93,11 +132,12 @@ function fireWeapons(weapons, player, enemies, dt) {
                     damage: dmg,
                     radius: w.def.radius,
                     type: w.def.type,
+                    assetKey: assetKey,
                     life: w.def.range / w.def.speed,
-                    piercing: w.id === 'fireball' ? 2 : 0,
+                    piercing: mech === 'fireball' ? 2 : 0,
                     hitEnemies: []
                 });
-            } else if (w.id === 'holywater') {
+            } else if (mech === 'holywater') {
                 // Drop at random nearby position
                 var hx = player.x + randFloat(-80, 80);
                 var hy = player.y + randFloat(-80, 80);
@@ -110,13 +150,14 @@ function fireWeapons(weapons, player, enemies, dt) {
                     damage: dmg,
                     radius: w.def.radius,
                     type: 'holywater',
+                    assetKey: assetKey,
                     life: w.def.duration,
                     tickRate: 0.3,
                     tickTimer: 0,
                     piercing: INFINITE_PIERCING,
                     hitEnemies: []
                 });
-            } else if (w.id === 'whip') {
+            } else if (mech === 'whip') {
                 // Whip in facing direction or toward nearest enemy
                 var wa = 0;
                 var near = findNearestEnemy(player, enemies);
@@ -132,6 +173,7 @@ function fireWeapons(weapons, player, enemies, dt) {
                     damage: dmg,
                     radius: w.def.range,
                     type: 'whip',
+                    assetKey: assetKey,
                     life: w.def.duration,
                     piercing: INFINITE_PIERCING,
                     hitEnemies: [],
@@ -208,9 +250,40 @@ var UPGRADE_POOL = [
 
 function generateUpgradeOptions(player, weapons) {
     var options = [];
+    var owned = weapons.map(function (w) { return w.id; });
+
+    // --- Weapon evolutions (highest priority — shown first when available) ---
+    var evolutions = [];
+    for (var ei = 0; ei < EVOLUTIONS.length; ei++) {
+        var ev = EVOLUTIONS[ei];
+        if (owned.indexOf(ev.result) >= 0) continue;       // already evolved
+        var wa = null;
+        for (var wi = 0; wi < weapons.length; wi++) {
+            if (weapons[wi].id === ev.a) { wa = weapons[wi]; break; }
+        }
+        if (!wa || wa.level < MAX_WEAPON_LEVEL) continue;   // base must be maxed
+        if (owned.indexOf(ev.b) < 0) continue;              // partner must be owned
+        var evolved = EVOLVED_DEFS[ev.result];
+        evolutions.push({
+            name: '✨ 進化：' + evolved.name,
+            desc: evolved.desc + '（融合 ' + WEAPON_DEFS[ev.a].name + ' + ' + WEAPON_DEFS[ev.b].name + '）',
+            apply: (function (rule) {
+                return function (p, weps) {
+                    // Remove both base weapons, add the evolved one
+                    for (var i = weps.length - 1; i >= 0; i--) {
+                        if (weps[i].id === rule.a || weps[i].id === rule.b) weps.splice(i, 1);
+                    }
+                    weps.push(createWeaponState(rule.result));
+                };
+            })(ev),
+            isWeapon: true,
+            weaponId: ev.result
+        });
+    }
+
     // Weapon upgrades for existing weapons
     for (var i = 0; i < weapons.length; i++) {
-        if (weapons[i].level < 8) {
+        if (weapons[i].level < MAX_WEAPON_LEVEL) {
             var w = weapons[i];
             options.push({
                 name: '⚔️ ' + w.def.name + ' Lv.' + (w.level + 1),
@@ -224,7 +297,6 @@ function generateUpgradeOptions(player, weapons) {
 
     // New weapon
     var weaponKeys = Object.keys(WEAPON_DEFS);
-    var owned = weapons.map(function (w) { return w.id; });
     for (var j = 0; j < weaponKeys.length; j++) {
         if (owned.indexOf(weaponKeys[j]) < 0 && weapons.length < 4) {
             var def = WEAPON_DEFS[weaponKeys[j]];
@@ -248,9 +320,9 @@ function generateUpgradeOptions(player, weapons) {
         });
     }
 
-    // Shuffle and pick 3
+    // Shuffle the regular options, then prepend evolutions so they always show
     shuffle(options);
-    return options.slice(0, 3);
+    return evolutions.concat(options).slice(0, 3);
 }
 
 function shuffle(arr) {
